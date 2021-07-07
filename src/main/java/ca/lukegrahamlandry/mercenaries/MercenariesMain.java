@@ -1,6 +1,9 @@
 package ca.lukegrahamlandry.mercenaries;
 
+import ca.lukegrahamlandry.mercenaries.entity.LeaderEntity;
+import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import ca.lukegrahamlandry.mercenaries.network.NetworkInit;
+import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -16,5 +19,12 @@ public class MercenariesMain {
         ItemInit.ITEMS.register(modEventBus);
         EntityInit.ENTITY.register(modEventBus);
         NetworkInit.registerPackets();
+
+        modEventBus.addListener(MercenariesMain::mobAttributes);
+    }
+
+    public static void mobAttributes(EntityAttributeCreationEvent event){
+        event.put(EntityInit.MERCENARY.get(), MercenaryEntity.makeAttributes().build());
+        event.put(EntityInit.LEADER.get(), LeaderEntity.makeAttributes().build());
     }
 }
