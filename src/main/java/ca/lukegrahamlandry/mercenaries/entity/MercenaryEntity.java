@@ -1,18 +1,16 @@
 package ca.lukegrahamlandry.mercenaries.entity;
 
-import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
-import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
+import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
+import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
+import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
-import net.minecraft.entity.ai.goal.*;
-import net.minecraft.entity.monster.CreeperEntity;
-import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ProjectileHelper;
-import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.*;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
@@ -20,14 +18,15 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
-import net.minecraftforge.eventbus.api.BusBuilder;
+import net.minecraftforge.fml.network.PacketDistributor;
 
 import java.util.function.Predicate;
 
-public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob {
+public class MercenaryEntity extends PlayerMob implements IRangedAttackMob {
     private AttackType attackType = AttackType.NONE;
     public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, World p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
+        this.inventory.selected = 8;
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
@@ -37,20 +36,37 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     @Override
     protected void registerGoals() {
         super.registerGoals();
-        this.goalSelector.addGoal(7, new LookAtGoal(this, PlayerEntity.class, 6.0F));
-        this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
 
-        this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
-        this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 15));
+        // have to redo all the goals because it's a player now
+
+        // this.goalSelector.addGoal(7, new LookAtGoal(this, PlayerEntity.class, 6.0F));
+        // this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
+
+        // this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
+        // this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 15));
         // melee attack goal should do this on its own
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
-        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, (p_234199_0_) -> {
-            return p_234199_0_ instanceof IMob && !(p_234199_0_ instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE);
-        }));
+        // this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, (p_234199_0_) -> {
+        //    return p_234199_0_ instanceof IMob && !(p_234199_0_ instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE);
+        // }));
 
-        this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
+        // this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
     }
 
+    @Override
+    public ActionResultType interact(PlayerEntity player, Hand p_184230_2_) {
+        if (!this.level.isClientSide()){
+            player.closeContainer();
+
+            ((ServerPlayerEntity)player).nextContainerCounter();
+            NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity)player), new OpenMercenaryInventoryPacket(((ServerPlayerEntity)player).containerCounter, this.getId()));
+            player.containerMenu = new MerceneryContainer(((ServerPlayerEntity)player).containerCounter, player.inventory, this.inventory, this);
+            player.containerMenu.addSlotListener(((ServerPlayerEntity)player));
+        }
+        return ActionResultType.SUCCESS;
+    }
+
+    /*
     // todo: equipment should be done in gui instead
     @Override
     protected ActionResultType mobInteract(PlayerEntity player, Hand hand) {
@@ -82,9 +98,10 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
         return super.mobInteract(player, hand);
     }
+     */
 
     public ResourceLocation getTexture() {
-        return null;
+        return new ResourceLocation("textures/null");
     }
 
     @Override
@@ -113,7 +130,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     // maybe instead of storing the attack type it should be done based on main hand item
-    // it would still be good to have the get method so goals can reference this clearly 
+    // it would still be good to have the get method so goals can reference this clearly
     public enum AttackType{
         NONE,
         MELEE,

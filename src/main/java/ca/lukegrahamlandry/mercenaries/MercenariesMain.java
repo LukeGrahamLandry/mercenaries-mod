@@ -2,7 +2,7 @@ package ca.lukegrahamlandry.mercenaries;
 
 import ca.lukegrahamlandry.mercenaries.entity.LeaderEntity;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
-import ca.lukegrahamlandry.mercenaries.network.NetworkInit;
+import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;

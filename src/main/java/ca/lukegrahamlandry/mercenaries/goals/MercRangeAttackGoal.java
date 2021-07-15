@@ -4,6 +4,7 @@ import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RangedBowAttackGoal;
 
+/*
 public class MercRangeAttackGoal extends SimpleRangedAttackGoal {
     MercenaryEntity owner;
     public MercRangeAttackGoal(MercenaryEntity mob, double speedMultiplier, int attackInterval, float range) {
@@ -21,3 +22,6 @@ public class MercRangeAttackGoal extends SimpleRangedAttackGoal {
         return owner.getAttackType() == MercenaryEntity.AttackType.RANGE && super.canContinueToUse();
     }
 }
+
+
+ */

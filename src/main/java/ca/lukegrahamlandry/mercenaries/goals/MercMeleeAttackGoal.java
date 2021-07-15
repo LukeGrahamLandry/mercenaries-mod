@@ -4,6 +4,7 @@ import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.entity.CreatureEntity;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 
+/*
 public class MercMeleeAttackGoal extends MeleeAttackGoal {
     MercenaryEntity owner;
     public MercMeleeAttackGoal(MercenaryEntity mob, double speedMultiplier, boolean followingTargetEvenIfNotSeen) {
@@ -21,3 +22,5 @@ public class MercMeleeAttackGoal extends MeleeAttackGoal {
         return owner.getAttackType() == MercenaryEntity.AttackType.MELEE && super.canContinueToUse();
     }
 }
+
+ */
