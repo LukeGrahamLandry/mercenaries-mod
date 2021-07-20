@@ -65,7 +65,7 @@ public class MerceneryContainer extends Container {
             });
         }
 
-        this.addSlot(new Slot(mercInventory, 1, 80, 60) {
+        this.addSlot(new Slot(mercInventory, 1, 80 + 18, 62) {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
@@ -84,22 +84,17 @@ public class MerceneryContainer extends Container {
             }
         });
 
-        this.addSlot(new Slot(mercInventory, 0, 80 + 18, 60) {
+        this.addSlot(new Slot(mercInventory, 0, 80, 62) {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
                 merc.setItemSlot(EquipmentSlotType.MAINHAND, stack);
             }
-
-            @Override
-            public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                return Pair.of(PlayerContainer.BLOCK_ATLAS, EMPTY_ARMOR_SLOT_SWORD);
-            }
         });
 
         for (int i=2;i<20;i++){
             int x = 80 + ((i % 5) * 18);
-            int y = 60 - (Math.floorDiv(i, 5) * 18);
+            int y = 62 - (Math.floorDiv(i, 5) * 18);
             this.addSlot(new Slot(mercInventory, i, x, y));
         }
 

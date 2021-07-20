@@ -17,6 +17,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ProjectileHelper;
+import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.*;
 import net.minecraft.nbt.CompoundNBT;
@@ -26,6 +27,8 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.*;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.PacketDistributor;
 
@@ -49,7 +52,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
-        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 35.0D).add(Attributes.MOVEMENT_SPEED, (double)0.23F).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.ARMOR, 2.0D).add(Attributes.SPAWN_REINFORCEMENTS_CHANCE);
+        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)1.2F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D);
     }
 
     @Override
@@ -60,7 +63,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         // this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
 
         this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
-        this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 15));
+        this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 3.0D, 20, 10));
         // melee attack goal should do this on its own
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
          this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, (p_234199_0_) -> {
@@ -68,6 +71,12 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         }));
 
         // this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        this.updateSwingTime();
     }
 
     @Override
@@ -83,39 +92,6 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return ActionResultType.SUCCESS;
     }
 
-    /*
-    // todo: equipment should be done in gui instead
-    @Override
-    protected ActionResultType mobInteract(PlayerEntity player, Hand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        if (hand == Hand.MAIN_HAND && this.getAttackType() == AttackType.NONE){
-            if (stack.getItem() instanceof SwordItem){
-                this.attackType = AttackType.MELEE;
-            } else if (stack.getItem() instanceof BowItem){
-                this.attackType = AttackType.RANGE;
-            } else if (stack.getItem() == Items.BOOK){
-                this.attackType = AttackType.CLERIC;
-            } else if (stack.getItem() == Items.STICK){
-                this.attackType = AttackType.MAGE;
-            }
-
-            if (this.getAttackType() != AttackType.NONE){
-                player.setItemInHand(hand, ItemStack.EMPTY);
-                this.setItemInHand(Hand.MAIN_HAND, stack);
-                return ActionResultType.CONSUME;
-            }
-
-            if (stack.getItem() instanceof ArmorItem){
-                EquipmentSlotType slot = ((ArmorItem) stack.getItem()).getSlot();
-                player.setItemInHand(hand, this.getItemBySlot(slot));
-                this.setItemSlot(slot, stack);
-                return ActionResultType.CONSUME;
-            }
-        }
-
-        return super.mobInteract(player, hand);
-    }
-     */
 
     @Override
     public void performRangedAttack(LivingEntity p_82196_1_, float p_82196_2_) {
@@ -150,17 +126,30 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return ItemStack.EMPTY;
     }
 
-    // maybe instead of storing the attack type it should be done based on main hand item
-    // it would still be good to have the get method so goals can reference this clearly
+    public int getFood() {
+        return 15;
+    }
+    public int getMoney() {
+        return 10;
+    }
+
     public enum AttackType{
         NONE,
         MELEE,
         RANGE,
-        CLERIC,
-        MAGE
+        ARTIFACT
     }
 
     public AttackType getAttackType() {
+        if (this.getMainHandItem().getItem().getAttributeModifiers(EquipmentSlotType.MAINHAND, this.getMainHandItem()).containsKey(Attributes.ATTACK_DAMAGE)){
+            this.attackType = AttackType.MELEE;
+        } else if (this.getMainHandItem().getItem() instanceof ShootableItem){
+            this.attackType = AttackType.RANGE;
+        } else {
+            this.attackType = AttackType.NONE;
+        }
+        // TODO: AttackType.ARTIFACT , timer, fake player etc
+
         return this.attackType;
     }
 
@@ -211,5 +200,13 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
     public ResourceLocation getTexture() {
         return MercTextureList.getMercTexture(this.getEntityData().get(TEXTURE_TYPE));
+    }
+
+    // TODO: use a synced data string and update cached textcomponent onDataSynced()
+    // TODO: asset list of names somewhere
+    ITextComponent nameText = new StringTextComponent("Name");
+    @Override
+    public ITextComponent getDisplayName() {
+        return nameText;
     }
 }
