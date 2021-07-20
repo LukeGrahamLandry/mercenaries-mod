@@ -1,5 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.entity;
 
+import ca.lukegrahamlandry.mercenaries.client.MercTextureList;
 import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
@@ -16,13 +17,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ProjectileHelper;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.ItemStackHelper;
-import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.*;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.network.datasync.DataParameter;
+import net.minecraft.network.datasync.DataSerializers;
+import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.*;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -31,11 +32,20 @@ import net.minecraftforge.fml.network.PacketDistributor;
 import java.util.function.Predicate;
 
 public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob {
+    public static final DataParameter<Integer> TEXTURE_TYPE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
+
     private AttackType attackType = AttackType.NONE;
     public Inventory inventory;
     public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, World p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
         this.inventory = new Inventory(24);
+        if (!this.level.isClientSide()) this.entityData.set(TEXTURE_TYPE, MercTextureList.getRandom());
+    }
+
+    @Override
+    protected void defineSynchedData() {
+        super.defineSynchedData();
+        this.entityData.define(TEXTURE_TYPE, 0);
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
@@ -109,10 +119,6 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
      */
 
-    public ResourceLocation getTexture() {
-        return new ResourceLocation("textures/null");
-    }
-
     @Override
     public void performRangedAttack(LivingEntity p_82196_1_, float p_82196_2_) {
         ItemStack ammoStack = this.getProjectile(this.getItemInHand(ProjectileHelper.getWeaponHoldingHand(this, Items.BOW)));
@@ -168,7 +174,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         }
         tag.put("Items", listnbt);
 
-
+        tag.putInt("texture", this.entityData.get(TEXTURE_TYPE));
     }
 
     @Override
@@ -184,6 +190,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                 this.inventory.setItem(j, ItemStack.of(compoundnbt));
             }
         }
+
+        this.entityData.set(TEXTURE_TYPE, tag.getInt("texture"));
     }
 
     @Override
@@ -193,5 +201,9 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
             this.spawnAtLocation(this.inventory.getItem(i));
         }
         this.inventory.clearContent();
+    }
+
+    public ResourceLocation getTexture() {
+        return MercTextureList.getMercTexture(this.getEntityData().get(TEXTURE_TYPE));
     }
 }

@@ -15,8 +15,9 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 public class ClientSetup {
     @SubscribeEvent
     public static void doSetup(FMLClientSetupEvent event) {
+        MercTextureList.clientInit();
+
         RenderingRegistry.registerEntityRenderingHandler(EntityInit.MERCENARY.get(), MercenaryRenderer::new);
         RenderingRegistry.registerEntityRenderingHandler(EntityInit.LEADER.get(), LeaderRenderer::new);
-
     }
 }
