@@ -1,32 +1,41 @@
 package ca.lukegrahamlandry.mercenaries.entity;
 
 import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
+import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
+import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
+import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
+import net.minecraft.entity.monster.CreeperEntity;
+import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.entity.projectile.ProjectileHelper;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.ItemStackHelper;
+import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.*;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvents;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.util.*;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.PacketDistributor;
 
 import java.util.function.Predicate;
 
-public class MercenaryEntity extends PlayerMob implements IRangedAttackMob {
+public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob {
     private AttackType attackType = AttackType.NONE;
+    public Inventory inventory;
     public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, World p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
-        this.inventory.selected = 8;
+        this.inventory = new Inventory(24);
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
@@ -42,19 +51,19 @@ public class MercenaryEntity extends PlayerMob implements IRangedAttackMob {
         // this.goalSelector.addGoal(7, new LookAtGoal(this, PlayerEntity.class, 6.0F));
         // this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
 
-        // this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
-        // this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 15));
+        this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
+        this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 15));
         // melee attack goal should do this on its own
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
-        // this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, (p_234199_0_) -> {
-        //    return p_234199_0_ instanceof IMob && !(p_234199_0_ instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE);
-        // }));
+         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, (p_234199_0_) -> {
+            return p_234199_0_ instanceof IMob && !(p_234199_0_ instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE);
+        }));
 
         // this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
     }
 
     @Override
-    public ActionResultType interact(PlayerEntity player, Hand p_184230_2_) {
+    public ActionResultType mobInteract(PlayerEntity player, Hand p_184230_2_) {
         if (!this.level.isClientSide()){
             player.closeContainer();
 
@@ -141,5 +150,48 @@ public class MercenaryEntity extends PlayerMob implements IRangedAttackMob {
 
     public AttackType getAttackType() {
         return this.attackType;
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundNBT tag) {
+        super.addAdditionalSaveData(tag);
+
+        ListNBT listnbt = new ListNBT();
+        for(int i = 0; i < this.inventory.getContainerSize(); ++i) {
+            ItemStack itemstack = this.inventory.getItem(i);
+            if (!itemstack.isEmpty()) {
+                CompoundNBT compoundnbt = new CompoundNBT();
+                compoundnbt.putByte("Slot", (byte)i);
+                itemstack.save(compoundnbt);
+                listnbt.add(compoundnbt);
+            }
+        }
+        tag.put("Items", listnbt);
+
+
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundNBT tag) {
+        super.readAdditionalSaveData(tag);
+
+        ListNBT listnbt = tag.getList("Items", 10);
+
+        for(int i = 0; i < listnbt.size(); ++i) {
+            CompoundNBT compoundnbt = listnbt.getCompound(i);
+            int j = compoundnbt.getByte("Slot") & 255;
+            if (j >= 0 && j < this.inventory.getContainerSize()) {
+                this.inventory.setItem(j, ItemStack.of(compoundnbt));
+            }
+        }
+    }
+
+    @Override
+    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean wasPlayer) {
+        super.dropCustomDeathLoot(source, looting, wasPlayer);
+        for (int i=2;i<20;i++){
+            this.spawnAtLocation(this.inventory.getItem(i));
+        }
+        this.inventory.clearContent();
     }
 }

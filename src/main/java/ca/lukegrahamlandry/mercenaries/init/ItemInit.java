@@ -9,6 +9,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class ItemInit {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MercenariesMain.MOD_ID);
 
+
     private static Item.Properties props(){
         return new Item.Properties().tab(ModCreativeTab.instance);
     }

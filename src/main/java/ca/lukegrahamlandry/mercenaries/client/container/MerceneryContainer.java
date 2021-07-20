@@ -10,12 +10,21 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.inventory.container.Slot;
+import net.minecraft.item.ArrowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+
+import static net.minecraft.inventory.container.PlayerContainer.*;
 
 public class MerceneryContainer extends Container {
     private final IInventory mercInventory;
     private final MercenaryEntity merc;
+
+    private static final ResourceLocation[] TEXTURE_EMPTY_SLOTS = new ResourceLocation[]{EMPTY_ARMOR_SLOT_BOOTS, EMPTY_ARMOR_SLOT_LEGGINGS, EMPTY_ARMOR_SLOT_CHESTPLATE, EMPTY_ARMOR_SLOT_HELMET};
+    private static final EquipmentSlotType[] SLOT_IDS = new EquipmentSlotType[]{EquipmentSlotType.HEAD, EquipmentSlotType.CHEST, EquipmentSlotType.LEGS, EquipmentSlotType.FEET};
+
 
     public MerceneryContainer(int id, PlayerInventory playerInventory, IInventory mercInventory, final MercenaryEntity merc) {
         // dont have to register the container type because I'm sending the packet manually. just incase I want to send extra info later
@@ -24,96 +33,36 @@ public class MerceneryContainer extends Container {
         this.merc = merc;
         mercInventory.startOpen(playerInventory.player);
 
-        // should do armor slots with a for loop
-        this.addSlot(new Slot(mercInventory, 39 - 0, 8, 9) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.canEquip(EquipmentSlotType.HEAD, merc);
-            }
+        for(int k = 0; k < 4; ++k) {
+            final EquipmentSlotType equipmentslottype = SLOT_IDS[k];
+            this.addSlot(new Slot(mercInventory, 23 - k, 8, 8 + k * 18) {
+                public int getMaxStackSize() {
+                    return 1;
+                }
 
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
+                @Override
+                public void set(ItemStack stack) {
+                    super.set(stack);
+                    merc.setItemSlot(equipmentslottype, stack);
+                }
 
-            @Override
-            public void set(ItemStack stack) {
-                super.set(stack);
-                merc.setItemSlot(EquipmentSlotType.HEAD, stack);
-            }
+                public boolean mayPlace(ItemStack p_75214_1_) {
+                    return p_75214_1_.canEquip(equipmentslottype, merc);
+                }
 
-            @Override
-            public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                return Pair.of(PlayerContainer.BLOCK_ATLAS, PlayerContainer.EMPTY_ARMOR_SLOT_HELMET);
-            }
-        });
-        this.addSlot(new Slot(mercInventory, 39 - 1, 8, 26) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.canEquip(EquipmentSlotType.CHEST, merc);
-            }
+                public boolean mayPickup(PlayerEntity p_82869_1_) {
+                    ItemStack itemstack = this.getItem();
+                    return !itemstack.isEmpty() && !p_82869_1_.isCreative() && EnchantmentHelper.hasBindingCurse(itemstack) ? false : super.mayPickup(p_82869_1_);
+                }
 
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
+                @OnlyIn(Dist.CLIENT)
+                public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
+                    return Pair.of(PlayerContainer.BLOCK_ATLAS, TEXTURE_EMPTY_SLOTS[equipmentslottype.getIndex()]);
+                }
+            });
+        }
 
-            @Override
-            public void set(ItemStack stack) {
-                super.set(stack);
-                merc.setItemSlot(EquipmentSlotType.CHEST, stack);
-            }
-
-            @Override
-            public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                return Pair.of(PlayerContainer.BLOCK_ATLAS, PlayerContainer.EMPTY_ARMOR_SLOT_CHESTPLATE);
-            }
-        });
-        this.addSlot(new Slot(mercInventory, 39 - 2, 8, 44) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.canEquip(EquipmentSlotType.LEGS, merc);
-            }
-
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-
-            @Override
-            public void set(ItemStack stack) {
-                super.set(stack);
-                merc.setItemSlot(EquipmentSlotType.LEGS, stack);
-            }
-
-            @Override
-            public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                return Pair.of(PlayerContainer.BLOCK_ATLAS, PlayerContainer.EMPTY_ARMOR_SLOT_LEGGINGS);
-            }
-        });
-        this.addSlot(new Slot(mercInventory, 39 - 3, 8, 62) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return stack.canEquip(EquipmentSlotType.FEET, merc);
-            }
-
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-
-            @Override
-            public void set(ItemStack stack) {
-                super.set(stack);
-                merc.setItemSlot(EquipmentSlotType.FEET, stack);
-            }
-
-            @Override
-            public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                return Pair.of(PlayerContainer.BLOCK_ATLAS, PlayerContainer.EMPTY_ARMOR_SLOT_BOOTS);
-            }
-        });
-        this.addSlot(new Slot(mercInventory, 4, 77, 62) {
+        this.addSlot(new Slot(mercInventory, 1, 80, 62) {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
@@ -132,7 +81,7 @@ public class MerceneryContainer extends Container {
             }
         });
 
-        this.addSlot(new Slot(mercInventory, 5, 77, 44) {
+        this.addSlot(new Slot(mercInventory, 0, 80 + 18, 62) {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
@@ -140,8 +89,11 @@ public class MerceneryContainer extends Container {
             }
         });
 
-
-
+        for (int i=2;i<20;i++){
+            int x = 80 + ((i % 5) * 18);
+            int y = 62 - (Math.floorDiv(i, 5) * 18);
+            this.addSlot(new Slot(mercInventory, i, x, y));
+        }
 
         // the player
 
