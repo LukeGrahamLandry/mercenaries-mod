@@ -1,5 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.client.container;
 
+import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -22,12 +23,14 @@ public class MerceneryContainer extends Container {
     private final IInventory mercInventory;
     private final MercenaryEntity merc;
 
+
+    public static final ResourceLocation EMPTY_ARMOR_SLOT_SWORD = new ResourceLocation("item/sword_outline");
     private static final ResourceLocation[] TEXTURE_EMPTY_SLOTS = new ResourceLocation[]{EMPTY_ARMOR_SLOT_BOOTS, EMPTY_ARMOR_SLOT_LEGGINGS, EMPTY_ARMOR_SLOT_CHESTPLATE, EMPTY_ARMOR_SLOT_HELMET};
     private static final EquipmentSlotType[] SLOT_IDS = new EquipmentSlotType[]{EquipmentSlotType.HEAD, EquipmentSlotType.CHEST, EquipmentSlotType.LEGS, EquipmentSlotType.FEET};
 
 
     public MerceneryContainer(int id, PlayerInventory playerInventory, IInventory mercInventory, final MercenaryEntity merc) {
-        // dont have to register the container type because I'm sending the packet manually. just incase I want to send extra info later
+        // dont have to register the container type because I'm sending the packet manually. just in case I want to send extra info later
         super(null, id);
         this.mercInventory = mercInventory;
         this.merc = merc;
@@ -62,7 +65,7 @@ public class MerceneryContainer extends Container {
             });
         }
 
-        this.addSlot(new Slot(mercInventory, 1, 80, 62) {
+        this.addSlot(new Slot(mercInventory, 1, 80, 60) {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
@@ -81,17 +84,22 @@ public class MerceneryContainer extends Container {
             }
         });
 
-        this.addSlot(new Slot(mercInventory, 0, 80 + 18, 62) {
+        this.addSlot(new Slot(mercInventory, 0, 80 + 18, 60) {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
                 merc.setItemSlot(EquipmentSlotType.MAINHAND, stack);
             }
+
+            @Override
+            public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
+                return Pair.of(PlayerContainer.BLOCK_ATLAS, EMPTY_ARMOR_SLOT_SWORD);
+            }
         });
 
         for (int i=2;i<20;i++){
             int x = 80 + ((i % 5) * 18);
-            int y = 62 - (Math.floorDiv(i, 5) * 18);
+            int y = 60 - (Math.floorDiv(i, 5) * 18);
             this.addSlot(new Slot(mercInventory, i, x, y));
         }
 

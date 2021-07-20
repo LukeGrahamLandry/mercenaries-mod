@@ -30,17 +30,17 @@ public class MercTextureList {
         };
 
         for (String str : mercDefaults) {
-            validMercTextures.add(new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/merc/" + str));
+            validMercTextures.add(new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/merc/" + str + ".png"));
         }
 
         for (String str : leaderDefaults) {
-            validLeaderTextures.add(new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/leader/" + str));
+            validLeaderTextures.add(new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/leader/" + str + ".png"));
         }
 
         // load the extras added by resource packs. they must be named "texture_i" with i being sequential integers from 0 to 244
 
         for (int i=0;i<MAX_TEXTURES;i++){
-            ResourceLocation check = new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/merc/texture_" + i);
+            ResourceLocation check = new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/merc/texture_" + i + ".png");
             try {
                 Minecraft.getInstance().getResourceManager().getResource(check);
                 validMercTextures.add(check);
@@ -50,7 +50,7 @@ public class MercTextureList {
         }
 
         for (int i=0;i<MAX_TEXTURES;i++){
-            ResourceLocation check = new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/leader/texture_" + i);
+            ResourceLocation check = new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/leader/texture_" + i + ".png");
             try {
                 Minecraft.getInstance().getResourceManager().getResource(check);
                 validLeaderTextures.add(check);

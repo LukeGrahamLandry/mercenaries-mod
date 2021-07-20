@@ -56,8 +56,6 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     protected void registerGoals() {
         super.registerGoals();
 
-        // have to redo all the goals because it's a player now
-
         // this.goalSelector.addGoal(7, new LookAtGoal(this, PlayerEntity.class, 6.0F));
         // this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
 
@@ -121,7 +119,10 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
     @Override
     public void performRangedAttack(LivingEntity p_82196_1_, float p_82196_2_) {
-        ItemStack ammoStack = this.getProjectile(this.getItemInHand(ProjectileHelper.getWeaponHoldingHand(this, Items.BOW)));
+        ItemStack ammoStack = this.getProjectile(this.getItemInHand(Hand.MAIN_HAND)); //ProjectileHelper.getWeaponHoldingHand(this, Items.BOW)));
+        if (ammoStack.isEmpty()) return;
+        ammoStack.shrink(1);
+
         AbstractArrowEntity abstractarrowentity = ProjectileHelper.getMobArrow(this, ammoStack, p_82196_2_);
         if (this.getMainHandItem().getItem() instanceof net.minecraft.item.BowItem)
             abstractarrowentity = ((net.minecraft.item.BowItem)this.getMainHandItem().getItem()).customArrow(abstractarrowentity);
@@ -138,10 +139,15 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (bowStack.getItem() instanceof ShootableItem) {
             Predicate<ItemStack> predicate = ((ShootableItem)bowStack.getItem()).getSupportedHeldProjectiles();
             ItemStack itemstack = ShootableItem.getHeldProjectile(this, predicate);
-            return itemstack.isEmpty() ? new ItemStack(Items.ARROW) : itemstack;
-        } else {
-            return ItemStack.EMPTY;
+            if (!itemstack.isEmpty()) return new ItemStack(Items.ARROW);
+
+            for (int i=2;i<20;i++){
+                ItemStack checkAmmo = this.inventory.getItem(i);
+                if (predicate.test(checkAmmo)) return checkAmmo;
+            }
         }
+
+        return ItemStack.EMPTY;
     }
 
     // maybe instead of storing the attack type it should be done based on main hand item
