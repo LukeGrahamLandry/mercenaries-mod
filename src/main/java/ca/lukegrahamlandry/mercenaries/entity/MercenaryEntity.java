@@ -1,5 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.entity;
 
+import ca.lukegrahamlandry.mercenaries.MercConfig;
 import ca.lukegrahamlandry.mercenaries.client.MercTextureList;
 import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
@@ -36,19 +37,30 @@ import java.util.function.Predicate;
 
 public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob {
     public static final DataParameter<Integer> TEXTURE_TYPE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
+    public static final DataParameter<Integer> FOOD = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
+    public static final DataParameter<Integer> MONEY = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
+
+    int foodTimer = 0;
+    int moneyTimer = 0;
 
     private AttackType attackType = AttackType.NONE;
     public Inventory inventory;
     public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, World p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
         this.inventory = new Inventory(24);
-        if (!this.level.isClientSide()) this.entityData.set(TEXTURE_TYPE, MercTextureList.getRandom());
+        if (!this.level.isClientSide()) {
+            this.entityData.set(TEXTURE_TYPE, MercTextureList.getRandom());
+            this.entityData.set(MONEY, 20);
+            this.entityData.set(FOOD, 20);
+        }
     }
 
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(TEXTURE_TYPE, 0);
+        this.entityData.define(MONEY, 20);
+        this.entityData.define(FOOD, 20);
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
@@ -77,6 +89,55 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     public void tick() {
         super.tick();
         this.updateSwingTime();
+
+        if (!this.level.isClientSide()){
+            // System.out.println("Money: " + this.moneyTimer + " " + this.getMoney() + " | Food: " + this.foodTimer + " " + this.getFood());
+
+            this.moneyTimer++;
+            if (this.moneyTimer > MercConfig.getMoneyDecayRate()){
+                this.entityData.set(MONEY, this.getMoney() - 1);
+
+                // consume from inventory
+                int needed = 20 - this.getMoney();
+                for (int i=0;i<(this.inventory.getContainerSize() - 4);i++){
+                    ItemStack stack = this.inventory.getItem(i);
+                    int value = MercConfig.getMoneyValue(stack.getItem());
+                    if (value > 0 && value <= needed){
+                        this.entityData.set(MONEY, this.getMoney() + value);
+                        stack.shrink(1);
+                        break;
+                    }
+                }
+
+                this.moneyTimer -= MercConfig.getMoneyDecayRate();
+                if (this.getMoney() <= 0) this.leaveOwner();
+            }
+
+            this.foodTimer++;
+            if (this.foodTimer > MercConfig.getFoodDecayRate()){
+                this.entityData.set(FOOD, this.getFood() - 1);
+
+                // consume from inventory
+                int needed = 20 - this.getFood();
+                for (int i=0;i<(this.inventory.getContainerSize() - 4);i++){
+                    ItemStack stack = this.inventory.getItem(i);
+                    int value = stack.getItem().isEdible() ? stack.getItem().getFoodProperties().getNutrition() : 0;
+                    if (value > 0 && value <= needed){
+                        this.entityData.set(FOOD, this.getFood() + value);
+                        this.eat(this.level, stack); // calls stack.shrink and addEatEffects
+                        break;
+                    }
+                }
+
+                this.foodTimer -= MercConfig.getFoodDecayRate();
+                if (this.getFood() <= 0) this.leaveOwner();
+            }
+        }
+    }
+
+    // called when it runs out of food or money
+    private void leaveOwner() {
+        this.hurt(DamageSource.OUT_OF_WORLD, 50);
     }
 
     @Override
@@ -127,10 +188,15 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public int getFood() {
-        return 15;
+        return this.entityData.get(FOOD);
     }
     public int getMoney() {
-        return 10;
+        return this.entityData.get(MONEY);
+    }
+
+    public void jumpTime(long ticks) {
+        this.moneyTimer += ticks;
+        this.foodTimer += ticks;
     }
 
     public enum AttackType{
@@ -170,6 +236,10 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         tag.put("Items", listnbt);
 
         tag.putInt("texture", this.entityData.get(TEXTURE_TYPE));
+        tag.putInt("money", this.entityData.get(MONEY));
+        tag.putInt("food", this.entityData.get(FOOD));
+        tag.putInt("moneyTimer",  this.moneyTimer);
+        tag.putInt("foodTimer",  this.foodTimer);
     }
 
     @Override
@@ -187,6 +257,10 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         }
 
         this.entityData.set(TEXTURE_TYPE, tag.getInt("texture"));
+        if (tag.contains("money")) this.entityData.set(MONEY, tag.getInt("money"));
+        if (tag.contains("food")) this.entityData.set(FOOD, tag.getInt("food"));
+        this.moneyTimer = tag.getInt("moneyTimer");
+        this.foodTimer = tag.getInt("foodTimer");
     }
 
     @Override

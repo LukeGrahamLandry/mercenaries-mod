@@ -27,7 +27,9 @@ public class BarRenderHelper {
         bind(GUI_ICONS_LOCATION);
         RenderSystem.enableBlend();
 
-        for (int i = 1; level > 0 && i < 20; i += 2)
+
+        // level > 0  -> level >= 0
+        for (int i = 1; level >= 0 && i < 20; i += 2)
         {
             if (i < level)
             {
