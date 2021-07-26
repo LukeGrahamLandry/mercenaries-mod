@@ -2,6 +2,7 @@ package ca.lukegrahamlandry.mercenaries;
 
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraftforge.fml.ModList;
 
 public class MercConfig {
     public static int getFoodDecayRate(){
@@ -17,5 +18,22 @@ public class MercConfig {
         if (item == Items.DIAMOND) return 19;
 
         return 0;
+    }
+
+    public static boolean artifactsInstalled(){
+        return isModLoaded("dungeons_gear");
+    }
+
+    private static boolean isModLoaded(String modID) {
+        return ModList.get() != null && ModList.get().getModContainerById(modID).isPresent();
+    }
+
+    // ticks between using any artifacts (in addition to their cool down)
+    public static int getSharedArtifactCooldown() {
+        return 20;
+    }
+
+    public static int getTimeToUseArtifact() {
+        return 30;
     }
 }

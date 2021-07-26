@@ -124,6 +124,10 @@ repositories {
         name 'progwm\'s Maven' // JEI + Mantle + TCon
         url 'https://dvs1.progwml6.com/files/maven'
     }
+    maven {
+
+        url "https://www.cursemaven.com"
+    }
 }
 
 dependencies {
@@ -134,6 +138,8 @@ dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8:processor'
 
     runtimeOnly fg.deobf("mezz.jei:jei-1.16.5:7.6.4.90")
+
+    implementation fg.deobf("curse.maven:dungeons-gear-401247:3377033")
 
     // You may put jars on which you depend on in ./libs or you may define them like so..
     // compile "some.group:artifact:version:classifier"

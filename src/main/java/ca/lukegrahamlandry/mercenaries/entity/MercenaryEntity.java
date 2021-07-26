@@ -6,6 +6,7 @@ import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
+import ca.lukegrahamlandry.mercenaries.integration.UseArtifactGoal;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
@@ -42,6 +43,12 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
     int foodTimer = 0;
     int moneyTimer = 0;
+
+
+    // >0 when can't use
+    // <0 while using
+    int sharedArtifactCooldown = 0;
+    CooldownTracker cooldowns = new CooldownTracker();
 
     private AttackType attackType = AttackType.NONE;
     public Inventory inventory;
@@ -82,6 +89,10 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
             return p_234199_0_ instanceof IMob && !(p_234199_0_ instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE);
         }));
 
+         if (MercConfig.artifactsInstalled()){
+             this.goalSelector.addGoal(1, new UseArtifactGoal(this));
+         }
+
         // this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
     }
 
@@ -91,7 +102,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         this.updateSwingTime();
 
         if (!this.level.isClientSide()){
-            // System.out.println("Money: " + this.moneyTimer + " " + this.getMoney() + " | Food: " + this.foodTimer + " " + this.getFood());
+            this.cooldowns.tick();
+            this.sharedArtifactCooldown -= Math.signum(this.sharedArtifactCooldown);
 
             this.moneyTimer++;
             if (this.moneyTimer > MercConfig.getMoneyDecayRate()){
@@ -207,6 +219,9 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public AttackType getAttackType() {
+        if (this.getArtifactCooldown() < 0) {
+            return AttackType.ARTIFACT;
+        }
         if (this.getMainHandItem().getItem().getAttributeModifiers(EquipmentSlotType.MAINHAND, this.getMainHandItem()).containsKey(Attributes.ATTACK_DAMAGE)){
             this.attackType = AttackType.MELEE;
         } else if (this.getMainHandItem().getItem() instanceof ShootableItem){
@@ -214,7 +229,6 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         } else {
             this.attackType = AttackType.NONE;
         }
-        // TODO: AttackType.ARTIFACT , timer, fake player etc
 
         return this.attackType;
     }
@@ -240,6 +254,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         tag.putInt("food", this.entityData.get(FOOD));
         tag.putInt("moneyTimer",  this.moneyTimer);
         tag.putInt("foodTimer",  this.foodTimer);
+
+        tag.putInt("sharedArtifactCooldown",  this.sharedArtifactCooldown);
     }
 
     @Override
@@ -261,6 +277,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (tag.contains("food")) this.entityData.set(FOOD, tag.getInt("food"));
         this.moneyTimer = tag.getInt("moneyTimer");
         this.foodTimer = tag.getInt("foodTimer");
+
+        this.sharedArtifactCooldown = tag.getInt("sharedArtifactCooldown");
     }
 
     @Override
@@ -283,4 +301,27 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     public ITextComponent getDisplayName() {
         return nameText;
     }
+
+    // artifact integration
+
+    public CooldownTracker getCooldowns() {
+        return null;
+    }
+
+    public void onStartUseArtifact(){
+        this.sharedArtifactCooldown = -MercConfig.getTimeToUseArtifact();
+    }
+
+    public void onActuallyUseArtifact(){
+        this.sharedArtifactCooldown = -MercConfig.getSharedArtifactCooldown();
+    }
+
+    public void onEndUseArtifact(){
+        this.sharedArtifactCooldown = MercConfig.getSharedArtifactCooldown();
+    }
+
+    public int getArtifactCooldown() {
+        return this.sharedArtifactCooldown;
+    }
+
 }
