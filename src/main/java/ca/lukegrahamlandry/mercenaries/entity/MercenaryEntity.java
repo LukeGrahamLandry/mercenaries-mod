@@ -6,6 +6,7 @@ import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
+import ca.lukegrahamlandry.mercenaries.integration.FakePlayerThatRedirects;
 import ca.lukegrahamlandry.mercenaries.integration.UseArtifactGoal;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.entity.*;
@@ -71,7 +72,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
-        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)1.2F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D);
+        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)0.4F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D);
     }
 
     @Override
@@ -82,7 +83,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         // this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
 
         this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
-        this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 3.0D, 20, 10));
+        this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 10));
         // melee attack goal should do this on its own
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
          this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, (p_234199_0_) -> {
@@ -211,6 +212,12 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         this.foodTimer += ticks;
     }
 
+    FakePlayerThatRedirects fakePlayer;
+    public PlayerEntity getFakePlayer() {
+        if (this.fakePlayer == null) this.fakePlayer = new FakePlayerThatRedirects(this);
+        return this.fakePlayer;
+    }
+
     public enum AttackType{
         NONE,
         MELEE,
@@ -305,7 +312,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     // artifact integration
 
     public CooldownTracker getCooldowns() {
-        return null;
+        return this.cooldowns;
     }
 
     public void onStartUseArtifact(){
@@ -313,7 +320,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public void onActuallyUseArtifact(){
-        this.sharedArtifactCooldown = -MercConfig.getSharedArtifactCooldown();
+
     }
 
     public void onEndUseArtifact(){

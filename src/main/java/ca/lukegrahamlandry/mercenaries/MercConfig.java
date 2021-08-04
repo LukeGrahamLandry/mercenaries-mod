@@ -6,11 +6,11 @@ import net.minecraftforge.fml.ModList;
 
 public class MercConfig {
     public static int getFoodDecayRate(){
-        return 60;  // 24000 / 20 * 4
+        return 24000 / 20 * 4;
     }
 
     public static int getMoneyDecayRate(){
-        return 60;  // 24000 / 20 * 4
+        return 24000 / 20 * 4;
     }
 
     public static int getMoneyValue(Item item){
@@ -30,9 +30,10 @@ public class MercConfig {
 
     // ticks between using any artifacts (in addition to their cool down)
     public static int getSharedArtifactCooldown() {
-        return 20;
+        return 100;
     }
 
+    // ticks it takes the merc to use an artifact
     public static int getTimeToUseArtifact() {
         return 30;
     }

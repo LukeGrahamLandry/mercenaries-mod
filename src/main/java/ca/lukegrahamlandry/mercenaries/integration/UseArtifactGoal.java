@@ -1,11 +1,14 @@
 package ca.lukegrahamlandry.mercenaries.integration;
 
 import ca.lukegrahamlandry.mercenaries.MercConfig;
+import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import com.infamous.dungeons_gear.items.artifacts.ArtifactItem;
+import net.minecraft.command.arguments.EntityAnchorArgument;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.util.CooldownTracker;
 import net.minecraft.util.Hand;
@@ -36,6 +39,7 @@ public class UseArtifactGoal extends Goal {
         for (int i=0;i<20;i++){
             Item check = this.merc.inventory.getItem(i).getItem();
             if (check instanceof ArtifactItem){
+                System.out.println("found artifact " + check);
                 CooldownTracker cooldowns = this.merc.getCooldowns();
                 if (!cooldowns.isOnCooldown(check)){
                     validArtifacts.add(i);
@@ -46,30 +50,56 @@ public class UseArtifactGoal extends Goal {
 
         if (validArtifacts.size() > 0){
             this.index = merc.getRandom().nextInt(validArtifacts.size());
-            this.time = 30;
-            this.merc.onStartUseArtifact();
             return true;
         }
 
         return false;
     }
 
+    public void start(){
+        System.out.println("start use artifact");
+        this.time = 0;
+        this.merc.onStartUseArtifact();
+
+        ItemStack artifact = merc.inventory.getItem(this.index);
+        ItemStack oldMainHand = merc.inventory.getItem(0);
+        this.merc.setItemInHand(Hand.MAIN_HAND, artifact);
+        this.merc.inventory.setItem(0, artifact);
+        this.merc.inventory.setItem(this.index, oldMainHand);
+    }
+
+    public void stop(){
+        this.merc.onEndUseArtifact();
+
+        ItemStack oldMainHand = merc.inventory.getItem(this.index);
+        ItemStack artifact = merc.inventory.getItem(0);
+        this.merc.inventory.setItem(0, oldMainHand);
+        this.merc.setItemInHand(Hand.MAIN_HAND, oldMainHand);
+        this.merc.inventory.setItem(this.index, artifact);
+    }
+
     @Override
     public boolean canContinueToUse() {
-        return merc.inventory.getItem(this.index).getItem() instanceof ArtifactItem && this.time < MercConfig.getTimeToUseArtifact();
+        return this.time < MercConfig.getTimeToUseArtifact() && this.merc.getTarget() != null;
     }
 
     @Override
     public void tick() {
         this.time++;
 
+        System.out.println(this.time);
+        this.merc.lookAt(EntityAnchorArgument.Type.EYES, this.merc.getTarget().getEyePosition(1));
+
         if (this.time == (MercConfig.getTimeToUseArtifact() / 2)){
-            Item check = merc.inventory.getItem(this.index).getItem();
-            PlayerEntity fakePlayer;
-            ItemUseContext context = new ItemUseContext(fakePlayer, Hand.MAIN_HAND, getPlayerPOVHitResult(merc.level, this.merc, RayTraceContext.FluidMode.SOURCE_ONLY));
+            System.out.println("really artifact");
+
+            Item check = merc.inventory.getItem(0).getItem();
+            ItemUseContext context = new ItemUseContext(merc.getFakePlayer(), Hand.MAIN_HAND, getPlayerPOVHitResult(merc.level, this.merc, RayTraceContext.FluidMode.SOURCE_ONLY));
             if (check instanceof ArtifactItem){
+                System.out.println("valid artifact");
+                this.merc.onActuallyUseArtifact();
                 ((ArtifactItem) check).procArtifact(context);
-                ArtifactItem.putArtifactOnCooldown(fakePlayer, check);
+                ArtifactItem.putArtifactOnCooldown(merc.getFakePlayer(), check);
             }
         }
     }
@@ -84,7 +114,7 @@ public class UseArtifactGoal extends Goal {
         float f5 = MathHelper.sin(-f * ((float)Math.PI / 180F));
         float f6 = f3 * f4;
         float f7 = f2 * f4;
-        double d0 = p_219968_1_.getAttribute(net.minecraftforge.common.ForgeMod.REACH_DISTANCE.get()).getValue();;
+        double d0 = 5; // p_219968_1_.getAttribute(net.minecraftforge.common.ForgeMod.REACH_DISTANCE.get()).getValue();;
         Vector3d vector3d1 = vector3d.add((double)f6 * d0, (double)f5 * d0, (double)f7 * d0);
         return p_219968_0_.clip(new RayTraceContext(vector3d, vector3d1, RayTraceContext.BlockMode.OUTLINE, p_219968_2_, p_219968_1_));
     }
