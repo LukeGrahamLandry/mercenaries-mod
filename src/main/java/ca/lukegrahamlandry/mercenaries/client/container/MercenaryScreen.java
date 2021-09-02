@@ -2,17 +2,23 @@ package ca.lukegrahamlandry.mercenaries.client.container;
 
 import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
+import ca.lukegrahamlandry.mercenaries.network.SetMercStancePacket;
+import com.infamous.dungeons_gear.combat.NetworkHandler;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.screen.inventory.InventoryScreen;
+import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
+
 
 public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
     private static final ResourceLocation GUARD_GUI_TEXTURES_NO_SWORD = new ResourceLocation(MercenariesMain.MOD_ID, "textures/container/inventory_old.png");
@@ -22,10 +28,29 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
     private float xMouse;
     private float yMouse;
 
+    int stance;
+    private static final String[] stanceTypes = new String[]{
+            "Attack", "Defend", "Hold Position"
+    };
+
     public MercenaryScreen(MerceneryContainer container, PlayerInventory playerInventory, MercenaryEntity merc) {
         super(container, playerInventory, merc.getDisplayName());
         this.merc = merc;
         this.passEvents = false;
+        this.stance = this.merc.getStance();
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        ITextComponent stanceText = new StringTextComponent(stanceTypes[this.stance]);
+        this.addButton(new Button(0, 0, 80, 20, stanceText, (p_214318_1_) -> {
+            this.stance = (this.stance + 1) % 3;
+            this.merc.setStance(this.stance);
+            NetworkHandler.INSTANCE.sendToServer(new SetMercStancePacket(this.stance, this.merc.getId()));
+            this.buttons.clear();
+            this.init();
+        }));
     }
 
     protected void renderLabels(MatrixStack matrixStack, int p_230451_2_, int p_230451_3_) {
