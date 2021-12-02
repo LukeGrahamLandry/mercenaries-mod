@@ -1,5 +1,6 @@
 package ca.lukegrahamlandry.mercenaries;
 
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraftforge.fml.ModList;
@@ -11,6 +12,18 @@ public class MercConfig {
 
     public static int getMoneyDecayRate(){
         return 24000 / 20 * 4;
+    }
+
+    public static int mercPriceScaleFactor(){
+        return 20;
+    }
+
+    public static int maxMercs(){
+        return 3;
+    }
+
+    public static Item buyMercItem(){
+        return Items.EMERALD;
     }
 
     public static int getMoneyValue(Item item){
@@ -36,5 +49,11 @@ public class MercConfig {
     // ticks it takes the merc to use an artifact
     public static int getTimeToUseArtifact() {
         return 30;
+    }
+
+    public static int caclualteCurrentPrice(ServerPlayerEntity player) {
+        int owned = SaveMercData.get().getMercs(player).size();
+        if (owned >= maxMercs()) return Integer.MAX_VALUE;
+        return (owned + 1) * mercPriceScaleFactor();
     }
 }

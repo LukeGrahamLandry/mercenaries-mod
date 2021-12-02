@@ -1,8 +1,7 @@
 package ca.lukegrahamlandry.mercenaries.network;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
-import ca.lukegrahamlandry.mercenaries.client.container.MercenaryScreen;
-import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
+import ca.lukegrahamlandry.mercenaries.client.gui.MercenaryScreen;
+import ca.lukegrahamlandry.mercenaries.client.gui.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;

@@ -1,14 +1,9 @@
 package ca.lukegrahamlandry.mercenaries.network;
 
-import ca.lukegrahamlandry.mercenaries.client.container.MercenaryScreen;
-import ca.lukegrahamlandry.mercenaries.client.container.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 import java.util.function.Supplier;

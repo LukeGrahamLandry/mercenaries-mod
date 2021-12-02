@@ -1,7 +1,10 @@
 package ca.lukegrahamlandry.mercenaries;
 
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
+import ca.lukegrahamlandry.mercenaries.events.MiscEventHandler;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
@@ -14,6 +17,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 public class SaveMercData extends WorldSavedData {
     static String ID = MercenariesMain.MOD_ID + ":worlddata";
@@ -25,24 +30,34 @@ public class SaveMercData extends WorldSavedData {
         mercs = new HashMap<>();
     }
 
-    public void addMerc(PlayerEntity player, MercenaryEntity merc){
+    public void addMerc(ServerPlayerEntity player, MercenaryEntity merc){
         ArrayList<UUID> owned = mercs.getOrDefault(player.getUUID(), new ArrayList<>());
         owned.add(merc.getUUID());
+        mercs.put(player.getUUID(), owned);
         this.setDirty();
     }
 
-    public void removeMerc(PlayerEntity player, MercenaryEntity merc){
+    public void removeMerc(ServerPlayerEntity player, MercenaryEntity merc){
         ArrayList<UUID> owned = mercs.getOrDefault(player.getUUID(), new ArrayList<>());
         owned.remove(merc.getUUID());
         this.setDirty();
     }
 
-    public ArrayList<UUID> getMercs(PlayerEntity player){
+    public ArrayList<UUID> getMercs(ServerPlayerEntity player){
         return mercs.getOrDefault(player.getUUID(), new ArrayList<>());
     }
 
-    public static SaveMercData getInstance(World world){
-        return ((ServerWorld) world.getServer().getLevel(World.OVERWORLD)).getDataStorage().get(SaveMercData::new, ID);
+    public void forLoadedMercBelongingTo(ServerPlayerEntity player, Consumer<MercenaryEntity> action){
+        for (UUID mID : getMercs(player)){
+            Entity maybeMerc = ((ServerWorld)player.level).getEntity(mID);
+            if (maybeMerc instanceof MercenaryEntity){
+                action.accept((MercenaryEntity) maybeMerc);
+            }
+        }
+    }
+
+    public static SaveMercData get(){
+        return MiscEventHandler.server.overworld().getDataStorage().computeIfAbsent(SaveMercData::new, ID);
     }
 
     @Override

@@ -1,6 +1,5 @@
-package ca.lukegrahamlandry.mercenaries.client.container;
+package ca.lukegrahamlandry.mercenaries.client.gui;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -11,7 +10,6 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ArrowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -30,7 +28,7 @@ public class MerceneryContainer extends Container {
 
 
     public MerceneryContainer(int id, PlayerInventory playerInventory, IInventory mercInventory, final MercenaryEntity merc) {
-        // dont have to register the container type because I'm sending the packet manually. just in case I want to send extra info later
+        // dont have to register the gui type because I'm sending the packet manually. just in case I want to send extra info later
         super(null, id);
         this.mercInventory = mercInventory;
         this.merc = merc;

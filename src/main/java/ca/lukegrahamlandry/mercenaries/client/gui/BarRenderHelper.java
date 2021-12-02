@@ -1,20 +1,12 @@
-package ca.lukegrahamlandry.mercenaries.client.container;
+package ca.lukegrahamlandry.mercenaries.client.gui;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.ai.attributes.Attributes;
-import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.FoodStats;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
 
 import static net.minecraft.client.gui.AbstractGui.GUI_ICONS_LOCATION;
-import static net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType.*;
-import static net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType.FOOD;
 
 public class BarRenderHelper {
     private static Drawable EMERALD = new Drawable(new ResourceLocation("textures/item/emerald.png"), 10, 10);

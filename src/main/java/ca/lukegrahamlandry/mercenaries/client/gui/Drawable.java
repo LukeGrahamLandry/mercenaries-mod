@@ -1,4 +1,4 @@
-package ca.lukegrahamlandry.mercenaries.client.container;
+package ca.lukegrahamlandry.mercenaries.client.gui;
 
 import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import net.minecraft.client.Minecraft;
