@@ -4,6 +4,7 @@ import ca.lukegrahamlandry.mercenaries.MercConfig;
 import ca.lukegrahamlandry.mercenaries.SaveMercData;
 import ca.lukegrahamlandry.mercenaries.client.MercTextureList;
 import ca.lukegrahamlandry.mercenaries.client.gui.MerceneryContainer;
+import ca.lukegrahamlandry.mercenaries.goals.MercFollowGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
@@ -12,6 +13,7 @@ import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
+import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
@@ -100,7 +102,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         // melee attack goal should do this on its own
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
          this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, this::canTarget));
-
+         this.goalSelector.addGoal(2, new MercFollowGoal(this));
          /*
          if (MercConfig.artifactsInstalled()){
              this.goalSelector.addGoal(1, new UseArtifactGoal(this));
@@ -146,8 +148,26 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                     }
                 }
 
-                this.moneyTimer -= MercConfig.getMoneyDecayRate();
-                if (this.getMoney() <= 0) this.leaveOwner();
+                this.moneyTimer -= MercConfig.getMoneyDecayRate(); // set to 0 but might have overshot
+
+                if (this.getMoney() <= 8 && this.alertLevel < 1) {
+                    if (this.getOwner() != null){
+                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries wants to be paid"), true);
+                        this.alertLevel = 1;
+                    }
+                }
+
+                if (this.getMoney() <= 4 && this.alertLevel < 2) {
+                    if (this.getOwner() != null){
+                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries urgently needs to be paid!"), true);
+                        this.alertLevel = 2;
+                    }
+                }
+
+                if (this.getMoney() <= 0){
+                    this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left"), true);
+                    this.leaveOwner();
+                }
             }
 
             this.foodTimer++;
@@ -166,11 +186,31 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                     }
                 }
 
-                this.foodTimer -= MercConfig.getFoodDecayRate();
-                if (this.getFood() <= 0) this.leaveOwner();
+                this.foodTimer -= MercConfig.getFoodDecayRate(); // set to 0 but might have overshot
+
+                if (this.getFood() <= 8 && this.alertLevel < 1) {
+                    if (this.getOwner() != null){
+                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries wants food"), true);
+                        this.alertLevel = 1;
+                    }
+                }
+
+                if (this.getFood() <= 4 && this.alertLevel < 2) {
+                    if (this.getOwner() != null){
+                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries urgently needs food!"), true);
+                        this.alertLevel = 2;
+                    }
+                }
+
+                if (this.getFood() <= 0){
+                    this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left"), true);
+                    this.leaveOwner();
+                }
             }
         }
     }
+
+    int alertLevel = 0;
 
     @Override
     public boolean hurt(DamageSource source, float p_70097_2_) {
@@ -278,6 +318,10 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         } else {
             return null;
         }
+    }
+
+    public boolean hasFindableTarget() {
+        return this.getTarget() != null && this.getTarget().isAlive() && this.distanceToSqr(this.getTarget()) < 32*32;
     }
 
 
