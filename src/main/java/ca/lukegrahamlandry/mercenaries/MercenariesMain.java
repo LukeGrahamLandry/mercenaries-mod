@@ -21,6 +21,7 @@ public class MercenariesMain {
         NetworkInit.registerPackets();
 
         modEventBus.addListener(MercenariesMain::mobAttributes);
+        MercConfig.init();
     }
 
     public static void mobAttributes(EntityAttributeCreationEvent event){

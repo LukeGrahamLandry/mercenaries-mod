@@ -165,7 +165,6 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                 }
 
                 if (this.getMoney() <= 0){
-                    this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left"), true);
                     this.leaveOwner();
                 }
             }
@@ -203,7 +202,6 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                 }
 
                 if (this.getFood() <= 0){
-                    this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left"), true);
                     this.leaveOwner();
                 }
             }
@@ -223,7 +221,24 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
     // called when it runs out of food or money
     private void leaveOwner() {
-        this.hurt(DamageSource.OUT_OF_WORLD, 50);
+        if (!MercConfig.takeGearOnAbandon.get()){
+            for (int i=2;i<20;i++){
+                this.spawnAtLocation(this.inventory.getItem(i));
+            }
+            this.inventory.clearContent();
+            this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left. Its equipment is at " + this.blockPosition()), true);
+        } else {
+            this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left"), true);
+        }
+        removeFromOwnerData();
+        this.remove();
+    }
+
+    private void removeFromOwnerData(){
+        if (!this.level.isClientSide() && this.getOwner() != null) {
+            SaveMercData.get().removeMerc((ServerPlayerEntity) this.getOwner(), this);
+            this.setOwner(null);
+        }
     }
 
     @Override
@@ -308,7 +323,12 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public void setOwner(PlayerEntity player) {
-        this.entityData.set(OWNER, Optional.of(player.getUUID()));
+        if (player == null) {
+            this.entityData.set(OWNER, Optional.empty());
+        }
+        else {
+            this.entityData.set(OWNER, Optional.of(player.getUUID()));
+        }
     }
 
     public PlayerEntity getOwner(){
@@ -410,6 +430,12 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
             this.spawnAtLocation(this.inventory.getItem(i));
         }
         this.inventory.clearContent();
+    }
+
+    @Override
+    public void die(DamageSource p_70645_1_) {
+        super.die(p_70645_1_);
+        removeFromOwnerData();
     }
 
     public ResourceLocation getTexture() {

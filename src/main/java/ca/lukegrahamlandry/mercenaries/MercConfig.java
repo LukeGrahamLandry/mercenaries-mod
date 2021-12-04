@@ -5,11 +5,13 @@ import com.electronwill.nightconfig.core.io.WritingMode;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.io.File;
 
@@ -35,6 +37,8 @@ public class MercConfig {
     public static final ForgeConfigSpec.DoubleValue priceScaleFactor;
     public static final ForgeConfigSpec.IntValue artifactCooldown;
     public static final ForgeConfigSpec.IntValue artifactUseTime;
+    public static final ForgeConfigSpec.BooleanValue takeGearOnAbandon;
+    public static final ForgeConfigSpec.ConfigValue<String> hirePaymentItem;
 
     static {
         final ForgeConfigSpec.Builder serverBuilder = new ForgeConfigSpec.Builder();
@@ -43,11 +47,11 @@ public class MercConfig {
                 .push("server");
 
         foodDecayRate = serverBuilder
-                .comment("How many ticks for a mercenary to consume 1 unit of food (a full bar is 20 units)")
+                .comment("How many ticks for a mercenary to consume 1 unit of food (a full bar is 20 units). Use a value of 2147483647 to disable food requirement")
                 .defineInRange("foodDecayRate", 24000 / 20 * 4, 1, Integer.MAX_VALUE);
 
         getMoneyDecayRate = serverBuilder
-                .comment("How many ticks for a mercenary to consume 1 unit of money (a full bar is 20 units)")
+                .comment("How many ticks for a mercenary to consume 1 unit of money (a full bar is 20 units). Use a value of 2147483647 to disable payment requirement")
                 .defineInRange("getMoneyDecayRate", 24000 / 20 * 4, 1, Integer.MAX_VALUE);
 
         maxMercs = serverBuilder
@@ -60,7 +64,7 @@ public class MercConfig {
 
         diamondValue = serverBuilder
                 .comment("How many money units is a diamond worth")
-                .defineInRange("diamondValue", 4, 0, Integer.MAX_VALUE);
+                .defineInRange("diamondValue", 19, 0, Integer.MAX_VALUE);
 
         idleFollowDistance = serverBuilder
                 .comment("When there are no targets, how many blocks should you walk away before your mercenaries start following")
@@ -72,11 +76,11 @@ public class MercConfig {
 
         teleportDistance = serverBuilder
                 .comment("how many blocks should you walk away before your mercenaries teleport to you")
-                .defineInRange("fightingFollowDistance", 30, 1, Integer.MAX_VALUE);
+                .defineInRange("teleportDistance", 30, 1, Integer.MAX_VALUE);
 
         basePrice = serverBuilder
                 .comment("how many emeralds should your first mercenary cost. this will be scaled up for subsequent hires")
-                .defineInRange("basePrice", 20, 1, Integer.MAX_VALUE);
+                .defineInRange("basePrice", 20, 0, Integer.MAX_VALUE);
 
         priceScaleFactor = serverBuilder
                 .comment("how quickly should the price of mercenaries scale up. base price will be mulitplied by currentlyOwned^priceScaleFactor")
@@ -90,11 +94,16 @@ public class MercConfig {
                 .comment("UNUSED. ticks it takes the mercenary to use an artifact")
                 .defineInRange("artifactUseTime", 30, 1, Integer.MAX_VALUE);
 
+        takeGearOnAbandon = serverBuilder
+                .comment("when a mercenary abandons you, should it take the equipment you gave with it. if false, the equipment will be dropped on the ground where it last was")
+                .define("takeGearOnAbandon", true);
+
+        hirePaymentItem = serverBuilder
+                .comment("the resource location of the item used to pay for new mercenaries")
+                .define("hirePaymentItem", "minecraft:emerald");
+
         server_config = serverBuilder.build();
     }
-
-
-
 
     public static int getFoodDecayRate(){
         return foodDecayRate.get();
@@ -109,7 +118,7 @@ public class MercConfig {
     }
 
     public static Item buyMercItem(){
-        return Items.EMERALD;
+        return ForgeRegistries.ITEMS.getValue(new ResourceLocation(hirePaymentItem.get()));
     }
 
     public static int getMoneyValue(Item item){

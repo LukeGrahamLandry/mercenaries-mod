@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.NBTUtil;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.WorldSavedData;
@@ -21,7 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 public class SaveMercData extends WorldSavedData {
-    static String ID = MercenariesMain.MOD_ID + ":worlddata";
+    static String ID = MercenariesMain.MOD_ID;
 
     HashMap<UUID, ArrayList<UUID>> mercs;
 
@@ -57,14 +58,17 @@ public class SaveMercData extends WorldSavedData {
     }
 
     public static SaveMercData get(){
-        return MiscEventHandler.server.overworld().getDataStorage().computeIfAbsent(SaveMercData::new, ID);
+        // feels redundent but afraid to change
+        SaveMercData s = MiscEventHandler.server.overworld().getDataStorage().get(SaveMercData::new, ID);
+        if (s == null) return MiscEventHandler.server.overworld().getDataStorage().computeIfAbsent(SaveMercData::new, ID);
+        return s;
     }
 
     @Override
     public void load(CompoundNBT nbt) {
         this.mercs = new HashMap<>();
 
-        ListNBT playerList = nbt.getList("owned_mercs", 9);
+        ListNBT playerList = nbt.getList("owned_mercs", 10);
 
         for (int i=0;i<playerList.size();i++){
             CompoundNBT tag = playerList.getCompound(i);
@@ -72,7 +76,7 @@ public class SaveMercData extends WorldSavedData {
             ArrayList<UUID> owned = new ArrayList();
             ListNBT mercList = tag.getList("mercs", 11);
             for (int j=0;j<mercList.size();j++){
-                owned.add(UUID.fromString(mercList.getString(j)));
+                owned.add(NBTUtil.loadUUID(mercList.get(j)));
             }
 
             this.mercs.put(player, owned);

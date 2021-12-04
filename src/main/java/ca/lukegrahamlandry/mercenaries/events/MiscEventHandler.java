@@ -37,6 +37,7 @@ public class MiscEventHandler {
         ((ServerWorld)event.getWorld()).getAllEntities().forEach((entity -> {
             if (entity instanceof MercenaryEntity){
                 ((MercenaryEntity)entity).jumpTime(difference);
+                ((MercenaryEntity) entity).heal(20);
             }
         }));
     }

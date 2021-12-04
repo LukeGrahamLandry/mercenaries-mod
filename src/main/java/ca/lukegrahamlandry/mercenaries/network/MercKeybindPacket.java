@@ -1,6 +1,7 @@
 package ca.lukegrahamlandry.mercenaries.network;
 
 import ca.lukegrahamlandry.mercenaries.MercConfig;
+import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import ca.lukegrahamlandry.mercenaries.SaveMercData;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import ca.lukegrahamlandry.mercenaries.init.EntityInit;
@@ -43,12 +44,18 @@ public class MercKeybindPacket {
         SaveMercData.get().forLoadedMercBelongingTo(player, (merc) -> {
             merc.setStance(1);
         });
+
+        int count = SaveMercData.get().getMercs(player).size();
+        player.displayClientMessage(new StringTextComponent(count + " mercenaries set to defend"), true);
     }
 
     private static void attackAction(ServerPlayerEntity player) {
         SaveMercData.get().forLoadedMercBelongingTo(player, (merc) -> {
             merc.setStance(0);
         });
+
+        int count = SaveMercData.get().getMercs(player).size();
+        player.displayClientMessage(new StringTextComponent(count + " mercenaries set to attack"), true);
     }
 
     private static void stopAction(ServerPlayerEntity player) {
@@ -56,5 +63,8 @@ public class MercKeybindPacket {
             merc.setStance(2);
             merc.setPos(player.getX(), player.getY(), player.getZ());
         });
+
+        int count = SaveMercData.get().getMercs(player).size();
+        player.displayClientMessage(new StringTextComponent(count + " mercenaries teleported and set to hold"), true);
     }
 }
