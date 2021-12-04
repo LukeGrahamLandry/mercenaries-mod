@@ -87,7 +87,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
-        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)0.4F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D);
+        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)0.33F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D);
     }
 
     @Override
@@ -443,7 +443,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     // TODO: use a synced data string and update cached textcomponent onDataSynced()
-    // TODO: asset list of names somewhere
+    // TODO: set list of names in config
     ITextComponent nameText = new StringTextComponent("Name");
     @Override
     public ITextComponent getDisplayName() {
