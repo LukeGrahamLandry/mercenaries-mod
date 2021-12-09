@@ -1,23 +1,31 @@
 package ca.lukegrahamlandry.mercenaries.entity;
 
 import ca.lukegrahamlandry.mercenaries.client.MercTextureList;
+import ca.lukegrahamlandry.mercenaries.goals.LeaderMeleeAttackGoal;
+import ca.lukegrahamlandry.mercenaries.goals.MercFollowGoal;
+import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
+import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.network.OpenLeaderScreenPacket;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.entity.CreatureEntity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
+import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
+import net.minecraft.entity.monster.CreeperEntity;
+import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
+import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.*;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.PacketDistributor;
 
@@ -32,13 +40,38 @@ public class LeaderEntity extends CreatureEntity {
     }
 
     @Override
+    protected void registerGoals() {
+        super.registerGoals();
+
+        this.goalSelector.addGoal(1, new LeaderMeleeAttackGoal(this, 1.0D, true));
+        this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, this::canTarget));
+    }
+
+    private boolean canTarget(LivingEntity target) {
+        if (!(target instanceof IMob)) return false;
+        if (target instanceof CreeperEntity) return false;
+
+        double distSq = this.distanceToSqr(target);
+        return distSq < 9;
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float p_70097_2_) {
+        if (source.getEntity() instanceof LivingEntity && source.getEntity().isAlive() && EntityPredicates.NO_CREATIVE_OR_SPECTATOR.test(source.getEntity())){
+            this.setTarget((LivingEntity) source.getEntity());
+        }
+
+        return super.hurt(source, p_70097_2_);
+    }
+
+    @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(TEXTURE_TYPE, 0);
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
-        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 35.0D).add(Attributes.MOVEMENT_SPEED, (double)0.23F).add(Attributes.ATTACK_DAMAGE, 3.0D).add(Attributes.ARMOR, 2.0D).add(Attributes.SPAWN_REINFORCEMENTS_CHANCE);
+        return IronGolemEntity.createAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.35D);
     }
 
     @Override

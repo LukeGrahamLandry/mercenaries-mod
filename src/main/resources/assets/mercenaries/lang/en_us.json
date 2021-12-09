@@ -1,8 +1,12 @@
 {
   "entity.mercenaries.leader": "Mercenary Leader",
   "entity.mercenaries.mercenary": "Mercenary",
+
   "key.categories.mercenaries": "Mercenaries",
   "key.merc_defense": "All Defend",
   "key.merc_attack": "All Attack",
-  "key.merc_stop": "All Return"
+  "key.merc_stop": "All Return",
+
+  "item.mercenaries.merc_spawn_egg": "Mercenary Spawn Egg",
+  "item.mercenaries.leader_spawn_egg": "Mercenary Leader Spawn Egg"
 }

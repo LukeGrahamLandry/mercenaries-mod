@@ -75,7 +75,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, World p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
         this.inventory = new Inventory(24);
-        if (!this.level.isClientSide()) { // ????
+        if (!this.level.isClientSide()) {
             this.entityData.set(TEXTURE_TYPE, MercTextureList.getRandom());
             this.entityData.set(MONEY, 20);
             this.entityData.set(FOOD, 20);
@@ -107,12 +107,9 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     protected void registerGoals() {
         super.registerGoals();
 
-        // this.goalSelector.addGoal(7, new LookAtGoal(this, PlayerEntity.class, 6.0F));
-        // this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
-
         this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
         this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 10));
-        // melee attack goal should do this on its own
+        // melee attack goal should do this on its ownx
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
          this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, this::canTarget));
          this.goalSelector.addGoal(2, new MercFollowGoal(this));
@@ -120,10 +117,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
          if (MercConfig.artifactsInstalled()){
              this.goalSelector.addGoal(1, new UseArtifactGoal(this));
          }
-
-          */
-
-        // this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
+         */
     }
 
     private boolean canTarget(LivingEntity target) {
@@ -257,7 +251,9 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     @Override
     public boolean hurt(DamageSource source, float p_70097_2_) {
         if (source.getEntity() instanceof LivingEntity){
-            this.setTarget((LivingEntity) source.getEntity());
+            if (this.getOwner() == null || !this.getOwner().getUUID().equals(source.getEntity().getUUID())){
+                this.setTarget((LivingEntity) source.getEntity());
+            }
         }
 
         return super.hurt(source, p_70097_2_);
