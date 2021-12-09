@@ -2,6 +2,7 @@ package ca.lukegrahamlandry.mercenaries.client;
 
 import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import ca.lukegrahamlandry.mercenaries.client.render.LeaderRenderer;
+import ca.lukegrahamlandry.mercenaries.client.render.MercMountRenderer;
 import ca.lukegrahamlandry.mercenaries.client.render.MercenaryRenderer;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.api.distmarker.Dist;
@@ -26,6 +27,7 @@ public class ClientSetup {
 
         RenderingRegistry.registerEntityRenderingHandler(EntityInit.MERCENARY.get(), MercenaryRenderer::new);
         RenderingRegistry.registerEntityRenderingHandler(EntityInit.LEADER.get(), LeaderRenderer::new);
+        RenderingRegistry.registerEntityRenderingHandler(EntityInit.MOUNT.get(), MercMountRenderer::new);
 
         ClientRegistry.registerKeyBinding(STOP);
         ClientRegistry.registerKeyBinding(ATTACK);

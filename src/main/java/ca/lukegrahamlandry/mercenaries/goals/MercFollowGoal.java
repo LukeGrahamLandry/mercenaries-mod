@@ -5,6 +5,7 @@ import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.pathfinding.*;
 import net.minecraft.util.math.BlockPos;
@@ -17,7 +18,6 @@ public class MercFollowGoal extends Goal {
     private LivingEntity owner;
     private final IWorldReader level;
     private final double speedModifier;
-    private final PathNavigator navigation;
     private int timeToRecalcPath;
     private final float stopDistance;
     private float oldWaterCost;
@@ -27,7 +27,6 @@ public class MercFollowGoal extends Goal {
         this.merc = p_i225711_1_;
         this.level = p_i225711_1_.level;
         this.speedModifier = 0.8;
-        this.navigation = p_i225711_1_.getNavigation();
         this.stopDistance = 4;
         this.canFly = false;
         this.setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
@@ -61,12 +60,13 @@ public class MercFollowGoal extends Goal {
     }
 
     public boolean canContinueToUse() {
-        if (this.navigation.isDone()) {
+        if (this.merc.getNavigation().isDone()) {
             return false;
         } else if (this.merc.isHoldStace()) {
             return false;
         } else {
-            return !(this.merc.distanceToSqr(this.owner) <= (double)(this.stopDistance * this.stopDistance)) && !this.merc.hasFindableTarget();
+            boolean wantsToAttack = this.merc.hasFindableTarget() && this.merc.getAttackType() != MercenaryEntity.AttackType.NONE;
+            return this.merc.distanceToSqr(this.owner) > (double)(this.stopDistance * this.stopDistance) && !wantsToAttack;
         }
     }
 
@@ -78,7 +78,7 @@ public class MercFollowGoal extends Goal {
 
     public void stop() {
         this.owner = null;
-        this.navigation.stop();
+        this.merc.getNavigation().stop();
         this.merc.setPathfindingMalus(PathNodeType.WATER, this.oldWaterCost);
     }
 
@@ -86,11 +86,11 @@ public class MercFollowGoal extends Goal {
         this.merc.getLookControl().setLookAt(this.owner, 10.0F, (float)this.merc.getMaxHeadXRot());
         if (--this.timeToRecalcPath <= 0) {
             this.timeToRecalcPath = 10;
-            if (!this.merc.isLeashed() && !this.merc.isPassenger()) {
+            if (!this.merc.isLeashed()) {
                 if (this.merc.distanceToSqr(this.owner) >= MercConfig.getTeleportDistance()) {
                     this.teleportToOwner();
                 } else {
-                    this.navigation.moveTo(this.owner, this.speedModifier);
+                    this.merc.getNavigation().moveTo(this.owner, this.speedModifier);
                 }
 
             }
@@ -119,7 +119,7 @@ public class MercFollowGoal extends Goal {
             return false;
         } else {
             this.merc.moveTo((double)p_226328_1_ + 0.5D, (double)p_226328_2_, (double)p_226328_3_ + 0.5D, this.merc.yRot, this.merc.xRot);
-            this.navigation.stop();
+            this.merc.getNavigation().stop();
             return true;
         }
     }

@@ -1,5 +1,6 @@
 {
   "entity.mercenaries.leader": "Mercenary Leader",
+  "entity.mercenaries.mercenary": "Mercenary",
   "key.categories.mercenaries": "Mercenaries",
   "key.merc_defense": "All Defend",
   "key.merc_attack": "All Attack",

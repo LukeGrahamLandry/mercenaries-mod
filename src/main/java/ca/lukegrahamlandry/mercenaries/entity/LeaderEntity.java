@@ -28,6 +28,7 @@ public class LeaderEntity extends CreatureEntity {
     public LeaderEntity(EntityType<LeaderEntity> p_i48576_1_, World p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
         if (!this.level.isClientSide()) this.entityData.set(TEXTURE_TYPE, MercTextureList.getRandom());
+        this.setPersistenceRequired();
     }
 
     @Override

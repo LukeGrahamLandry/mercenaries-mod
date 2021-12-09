@@ -7,6 +7,7 @@ import ca.lukegrahamlandry.mercenaries.client.gui.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.goals.MercFollowGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
+import ca.lukegrahamlandry.mercenaries.init.EntityInit;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.integration.FakePlayerThatRedirects;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
@@ -18,6 +19,9 @@ import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
+import net.minecraft.entity.passive.ChickenEntity;
+import net.minecraft.entity.passive.horse.AbstractHorseEntity;
+import net.minecraft.entity.passive.horse.HorseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
@@ -30,10 +34,13 @@ import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.pathfinding.Path;
 import net.minecraft.util.*;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.PacketDistributor;
@@ -73,7 +80,13 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
             this.entityData.set(MONEY, 20);
             this.entityData.set(FOOD, 20);
             this.entityData.set(STANCE, 0);
+
+            if (!this.hasCustomName() && !MercConfig.names.get().isEmpty()){
+                String myName = MercConfig.names.get().get(this.getRandom().nextInt(MercConfig.names.get().size()));
+                this.setCustomName(new TranslationTextComponent(myName));
+            }
         }
+        this.setPersistenceRequired();
     }
 
     @Override
@@ -205,8 +218,39 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                     this.leaveOwner();
                 }
             }
+
+            if (this.getOwner() != null && MercConfig.createHorseToRide.get()){
+                boolean isRiding = this.getVehicle() != null;
+                boolean mountablesCompat = this.getOwner().getVehicle() != null && this.getOwner().getVehicle().getType().getRegistryName() != null && "mountables".equals(this.getOwner().getVehicle().getType().getRegistryName().getNamespace());
+                boolean shouldRide = this.getOwner().getVehicle() instanceof AbstractHorseEntity || mountablesCompat;
+
+
+                if (shouldRide && !isRiding && MercConfig.createHorseToRide.get()){
+                    if (horseTimer < 0){
+                        MercMountEntity horse = new MercMountEntity(EntityInit.MOUNT.get(), this.level);
+                        horse.setPos(this.getX(), this.getY(), this.getZ());
+                        this.startRiding(horse);
+                        this.level.addFreshEntity(horse);
+                        horseTimer = 15;
+                    } else {
+                        horseTimer--;
+                    }
+
+
+                } else if (!shouldRide && isRiding){
+                    Entity horse = this.getVehicle();
+                    if (horse instanceof MercMountEntity){
+                        horseTimer = 0;
+                        this.stopRiding();
+                        horse.remove();
+                    }
+                }
+            }
         }
     }
+    int horseTimer = 0;  // this really shouldnt be nessisary but it breaks and spawns a bunch
+    // for a bit before actually riding one for some reason. hacky fix but makes it slightly better. not perfect
+    // the mount is somehow kicking it off and then removing itself ?
 
     int alertLevel = 0;
 
@@ -442,12 +486,14 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return MercTextureList.getMercTexture(this.getEntityData().get(TEXTURE_TYPE));
     }
 
-    // TODO: use a synced data string and update cached textcomponent onDataSynced()
-    // TODO: set list of names in config
-    ITextComponent nameText = new StringTextComponent("Name");
     @Override
-    public ITextComponent getDisplayName() {
-        return nameText;
+    public double getPassengersRidingOffset() {
+        return super.getPassengersRidingOffset();
+    }
+
+    @Override
+    public double getMyRidingOffset() {
+        return super.getMyRidingOffset() - 0.4;
     }
 
     // artifact integration

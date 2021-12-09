@@ -1,5 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.events;
 
+import ca.lukegrahamlandry.mercenaries.MercConfig;
 import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.util.ResourceLocation;
@@ -54,8 +55,10 @@ public class AddVillagerHouse {
 
     @SubscribeEvent
     public static void addNewVillageBuilding(final FMLServerAboutToStartEvent event) {
+        if (MercConfig.leaderStructureWeight.get() == 0) return;
+
         MutableRegistry<JigsawPattern> templatePoolRegistry = event.getServer().registryAccess().registry(Registry.TEMPLATE_POOL_REGISTRY).get();
-            addToAllVillages(templatePoolRegistry, MercenariesMain.MOD_ID + ":merc", 10);
+            addToAllVillages(templatePoolRegistry, MercenariesMain.MOD_ID + ":merc", MercConfig.leaderStructureWeight.get());
     }
 
 }

@@ -1,6 +1,7 @@
 package ca.lukegrahamlandry.mercenaries;
 
 import ca.lukegrahamlandry.mercenaries.entity.LeaderEntity;
+import ca.lukegrahamlandry.mercenaries.entity.MercMountEntity;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
@@ -27,5 +28,6 @@ public class MercenariesMain {
     public static void mobAttributes(EntityAttributeCreationEvent event){
         event.put(EntityInit.MERCENARY.get(), MercenaryEntity.makeAttributes().build());
         event.put(EntityInit.LEADER.get(), LeaderEntity.makeAttributes().build());
+        event.put(EntityInit.MOUNT.get(), MercMountEntity.makeAttributes().build());
     }
 }
