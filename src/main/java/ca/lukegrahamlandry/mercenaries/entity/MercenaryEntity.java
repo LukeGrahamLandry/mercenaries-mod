@@ -317,7 +317,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (bowStack.getItem() instanceof ShootableItem) {
             Predicate<ItemStack> predicate = ((ShootableItem)bowStack.getItem()).getSupportedHeldProjectiles();
             ItemStack itemstack = ShootableItem.getHeldProjectile(this, predicate);
-            if (!itemstack.isEmpty()) return new ItemStack(Items.ARROW);
+            if (!itemstack.isEmpty()) return itemstack;
 
             for (int i=2;i<20;i++){
                 ItemStack checkAmmo = this.inventory.getItem(i);

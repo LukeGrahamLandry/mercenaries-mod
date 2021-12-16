@@ -113,7 +113,7 @@ public class MercConfig {
 
         leaderStructureWeight = serverBuilder
                 .comment("how common should leader houses in villages be. set to 0 to disable")
-                .defineInRange("leaderStructureWeight", 1, 0, 100);
+                .defineInRange("leaderStructureWeight", 500, 0, Integer.MAX_VALUE);
 
         createHorseToRide = serverBuilder
                 .comment("if true, when a player rides a horse, their followers will spawn horses to ride (which disappear when player stops riding)")
