@@ -4,9 +4,11 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "mercenaries.refmap.json",
   "mixins": [
+    "JigsawManagerMixin",
+    "JigsawPatternMixin",
+    "JigsawStructureMixin"
   ],
-  "client":[
-
+  "client": [
   ],
   "injectors": {
     "defaultRequire": 1

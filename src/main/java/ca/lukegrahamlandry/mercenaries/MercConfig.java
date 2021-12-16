@@ -40,9 +40,9 @@ public class MercConfig {
     public static final ForgeConfigSpec.IntValue artifactCooldown;
     public static final ForgeConfigSpec.IntValue artifactUseTime;
     public static final ForgeConfigSpec.BooleanValue takeGearOnAbandon;
+    public static final ForgeConfigSpec.BooleanValue generateLeaderHouses;
     public static final ForgeConfigSpec.ConfigValue<String> hirePaymentItem;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> names;
-    public static final ForgeConfigSpec.IntValue leaderStructureWeight;
     public static final ForgeConfigSpec.BooleanValue createHorseToRide;
 
     static {
@@ -111,9 +111,9 @@ public class MercConfig {
                 .comment("names to use for mercenaries. these can be translation keys but they don't have to be. one of these will be randomly chosen for each new mercenary")
                 .define("names", Arrays.asList("Sir Fight-a-lot", "Fighter McKillerson", "Murder McSlayer", "Sir Stab-a-lot"));
 
-        leaderStructureWeight = serverBuilder
-                .comment("how common should leader houses in villages be. set to 0 to disable")
-                .defineInRange("leaderStructureWeight", 500, 0, Integer.MAX_VALUE);
+        generateLeaderHouses = serverBuilder
+                .comment("should leader houses generate in villages?")
+                .define("generateLeaderHouses", true);
 
         createHorseToRide = serverBuilder
                 .comment("if true, when a player rides a horse, their followers will spawn horses to ride (which disappear when player stops riding)")
