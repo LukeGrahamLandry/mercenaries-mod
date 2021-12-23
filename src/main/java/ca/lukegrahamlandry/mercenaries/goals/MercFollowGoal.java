@@ -5,7 +5,6 @@ import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.pathfinding.*;
 import net.minecraft.util.math.BlockPos;
@@ -41,7 +40,7 @@ public class MercFollowGoal extends Goal {
             return false;
         } else if (livingentity.isSpectator()) {
             return false;
-        } else if (this.merc.isHoldStace()) {
+        } else if (!this.merc.isFollowMode()) {
             return false;
         }
 
@@ -62,7 +61,7 @@ public class MercFollowGoal extends Goal {
     public boolean canContinueToUse() {
         if (this.merc.getNavigation().isDone()) {
             return false;
-        } else if (this.merc.isHoldStace()) {
+        } else if (!this.merc.isFollowMode()) {
             return false;
         } else {
             boolean wantsToAttack = this.merc.hasFindableTarget() && this.merc.getAttackType() != MercenaryEntity.AttackType.NONE;

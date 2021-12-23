@@ -1,6 +1,7 @@
 package ca.lukegrahamlandry.mercenaries.network;
 
 import ca.lukegrahamlandry.mercenaries.SaveMercData;
+import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.text.StringTextComponent;
@@ -39,34 +40,37 @@ public class MercKeybindPacket {
     private static void defendAction(ServerPlayerEntity player) {
         AtomicInteger count = new AtomicInteger();
         SaveMercData.get().forLoadedMercBelongingTo(player, (merc) -> {
-            merc.setStance(1);
+            merc.setAttackStance(MercenaryEntity.AttackStance.DEFEND);
+            merc.setMoveStance(MercenaryEntity.MovementStance.FOLLOW);
             count.getAndIncrement();
         });
 
         int total = SaveMercData.get().getMercs(player).size();
-        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries set to defend"), true);
+        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries set to defend-follow"), true);
     }
 
     private static void attackAction(ServerPlayerEntity player) {
         AtomicInteger count = new AtomicInteger();
         SaveMercData.get().forLoadedMercBelongingTo(player, (merc) -> {
-            merc.setStance(0);
+            merc.setAttackStance(MercenaryEntity.AttackStance.ATTACK);
+            merc.setMoveStance(MercenaryEntity.MovementStance.FOLLOW);
             count.getAndIncrement();
         });
 
         int total = SaveMercData.get().getMercs(player).size();
-        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries set to attack"), true);
+        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries set to attack-follow"), true);
     }
 
     private static void stopAction(ServerPlayerEntity player) {
         AtomicInteger count = new AtomicInteger();
         SaveMercData.get().forLoadedMercBelongingTo(player, (merc) -> {
-            merc.setStance(2);
+            merc.setAttackStance(MercenaryEntity.AttackStance.PASSIVE);
+            merc.setMoveStance(MercenaryEntity.MovementStance.STAY);
             merc.setPos(player.getX(), player.getY(), player.getZ());
             count.getAndIncrement();
         });
 
         int total = SaveMercData.get().getMercs(player).size();
-        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries teleported and set to hold"), true);
+        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries teleported and set to passive-stay"), true);
     }
 }

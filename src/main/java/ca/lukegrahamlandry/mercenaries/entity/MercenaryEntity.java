@@ -14,14 +14,12 @@ import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
-import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
+import net.minecraft.entity.ai.goal.RandomWalkingGoal;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
-import net.minecraft.entity.passive.ChickenEntity;
 import net.minecraft.entity.passive.horse.AbstractHorseEntity;
-import net.minecraft.entity.passive.horse.HorseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
@@ -34,19 +32,13 @@ import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.util.*;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.PacketDistributor;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -56,8 +48,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     public static final DataParameter<Integer> FOOD = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
     public static final DataParameter<Integer> MONEY = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
 
-    // [attack, defend, hold position]
-    public static final DataParameter<Integer> STANCE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
+    public static final DataParameter<Integer> ATTACK_STANCE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
+    public static final DataParameter<Integer> MOVE_STANCE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
 
     public static final DataParameter<Optional<UUID>> OWNER = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.OPTIONAL_UUID);
 
@@ -79,7 +71,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
             this.entityData.set(TEXTURE_TYPE, MercTextureList.getRandom());
             this.entityData.set(MONEY, 20);
             this.entityData.set(FOOD, 20);
-            this.entityData.set(STANCE, 0);
+            this.entityData.set(ATTACK_STANCE, 0);
+            this.entityData.set(MOVE_STANCE, 0);
 
             if (!this.hasCustomName() && !MercConfig.names.get().isEmpty()){
                 String myName = MercConfig.names.get().get(this.getRandom().nextInt(MercConfig.names.get().size()));
@@ -95,7 +88,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         this.entityData.define(TEXTURE_TYPE, 0);
         this.entityData.define(MONEY, 20);
         this.entityData.define(FOOD, 20);
-        this.entityData.define(STANCE, 0);
+        this.entityData.define(ATTACK_STANCE, 0);
+        this.entityData.define(MOVE_STANCE, 0);
         this.entityData.define(OWNER, Optional.empty());
     }
 
@@ -113,6 +107,17 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
          this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, this::canTarget));
          this.goalSelector.addGoal(2, new MercFollowGoal(this));
+         this.goalSelector.addGoal(4, new RandomWalkingGoal(this, 0.8D){
+            @Override
+            public boolean canContinueToUse() {
+                return MercenaryEntity.this.isIdleMode() && super.canContinueToUse() && !MercenaryEntity.this.hasFindableTarget();
+            }
+
+            @Override
+            public boolean canUse() {
+                return MercenaryEntity.this.isIdleMode() && super.canUse() && !MercenaryEntity.this.hasFindableTarget();
+            }
+        });
          /*
          if (MercConfig.artifactsInstalled()){
              this.goalSelector.addGoal(1, new UseArtifactGoal(this));
@@ -124,10 +129,11 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (!(target instanceof IMob)) return false;
         if (target instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE) return false;
 
-        if (this.isAttackStace()) return true;
+        if (this.isAttackStace()) {
+            return !this.isStayMode() || this.distanceToSqr(target) < 9;
+        }
 
-        double distSq = this.distanceToSqr(target);
-        return this.isHoldStace() && distSq < 9;
+        return false;
     }
 
     @Override
@@ -340,20 +346,39 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         this.foodTimer += ticks;
     }
 
-    public void setStance(int stance) {
-        this.entityData.set(STANCE, stance);
+    public void setAttackStance(int stance) {
+        this.entityData.set(ATTACK_STANCE, stance);
+        if (this.isPassiveStace()){
+            this.setTarget(null);
+        }
     }
     public boolean isAttackStace(){
-        return this.getStance() == 0;
+        return this.getAttackStance() == AttackStance.ATTACK;
     }
     public boolean isDefendStace(){
-        return this.getStance() == 1;
+        return this.getAttackStance() == AttackStance.DEFEND;
     }
-    public boolean isHoldStace(){
-        return this.getStance() == 2;
+    public boolean isPassiveStace(){
+        return this.getAttackStance() == AttackStance.PASSIVE;
     }
-    public int getStance() {
-        return this.entityData.get(STANCE);
+    public int getAttackStance() {
+        return this.entityData.get(ATTACK_STANCE);
+    }
+
+    public void setMoveStance(int stance) {
+        this.entityData.set(MOVE_STANCE, stance);
+    }
+    public int getMoveStance() {
+        return this.entityData.get(MOVE_STANCE);
+    }
+    public boolean isFollowMode(){
+        return this.getMoveStance() == MovementStance.FOLLOW;
+    }
+    public boolean isIdleMode(){
+        return this.getMoveStance() == MovementStance.IDLE;
+    }
+    public boolean isStayMode(){
+        return this.getMoveStance() == MovementStance.STAY;
     }
 
     FakePlayerThatRedirects fakePlayer;
@@ -381,7 +406,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public boolean hasFindableTarget() {
-        return this.getTarget() != null && this.getTarget().isAlive() && this.distanceToSqr(this.getTarget()) < 32*32;
+        return this.getTarget() != null && this.getTarget().isAlive() && !this.isPassiveStace() && this.distanceToSqr(this.getTarget()) < 32*32;
     }
 
 
@@ -428,7 +453,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         tag.putInt("food", this.entityData.get(FOOD));
         tag.putInt("moneyTimer",  this.moneyTimer);
         tag.putInt("foodTimer",  this.foodTimer);
-        tag.putInt("stance",  this.getStance());
+        tag.putInt("stance",  this.getAttackStance());
+        tag.putInt("movestance",  this.getMoveStance());
         this.entityData.get(OWNER).ifPresent(owner -> {
             tag.putUUID("owner", owner);
         });
@@ -455,7 +481,8 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (tag.contains("food")) this.entityData.set(FOOD, tag.getInt("food"));
         this.moneyTimer = tag.getInt("moneyTimer");
         this.foodTimer = tag.getInt("foodTimer");
-        this.setStance(tag.getInt("stance"));
+        this.setAttackStance(tag.getInt("stance"));
+        this.setMoveStance(tag.getInt("movestance"));
         if (tag.contains("owner")){
             this.entityData.set(OWNER, Optional.of(tag.getUUID("owner")));
         }
@@ -514,4 +541,15 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return this.sharedArtifactCooldown;
     }
 
+    public static class MovementStance {
+        public static int FOLLOW = 0;
+        public static int IDLE = 1;
+        public static int STAY = 2;
+    }
+
+    public static class AttackStance {
+        public static int ATTACK = 0;
+        public static int DEFEND = 1;
+        public static int PASSIVE = 2;
+    }
 }

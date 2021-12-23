@@ -26,28 +26,43 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
     private float xMouse;
     private float yMouse;
 
-    int stance;
-    private static final String[] stanceTypes = new String[]{
-            "Attack", "Defend", "Hold Position"
+    int attackStance;
+    int moveStance;
+    private static final String[] attackStanceTypes = new String[]{
+            "Attack", "Defend", "Passive"
+    };
+
+    private static final String[] moveStanceTypes = new String[]{
+            "Follow", "Idle", "Stay"
     };
 
     public MercenaryScreen(MerceneryContainer container, PlayerInventory playerInventory, MercenaryEntity merc) {
         super(container, playerInventory, merc.getDisplayName());
         this.merc = merc;
         this.passEvents = false;
-        this.stance = this.merc.getStance();
+        this.attackStance = this.merc.getAttackStance();
+        this.moveStance = this.merc.getMoveStance();
     }
 
     @Override
     protected void init() {
         super.init();
-        ITextComponent stanceText = new StringTextComponent(stanceTypes[this.stance]);
+        ITextComponent stanceText = new StringTextComponent(attackStanceTypes[this.attackStance]);
         int i = (this.width - this.imageWidth) / 2;
         int j = (this.height - this.imageHeight) / 2;
         this.addButton(new Button(i - 90, j +20+30, 80, 20, stanceText, (p_214318_1_) -> {
-            this.stance = (this.stance + 1) % 3;
-            this.merc.setStance(this.stance);
-            NetworkInit.INSTANCE.sendToServer(new SetMercStancePacket(this.stance, this.merc.getId()));
+            this.attackStance = (this.attackStance + 1) % 3;
+            this.merc.setAttackStance(this.attackStance);
+            NetworkInit.INSTANCE.sendToServer(new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()));
+            this.buttons.clear();
+            this.init();
+        }));
+
+        stanceText = new StringTextComponent(moveStanceTypes[this.moveStance]);
+        this.addButton(new Button(i - 90, j +20+30+30, 80, 20, stanceText, (p_214318_1_) -> {
+            this.moveStance = (this.moveStance + 1) % 3;
+            this.merc.setMoveStance(this.moveStance);
+            NetworkInit.INSTANCE.sendToServer(new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()));
             this.buttons.clear();
             this.init();
         }));

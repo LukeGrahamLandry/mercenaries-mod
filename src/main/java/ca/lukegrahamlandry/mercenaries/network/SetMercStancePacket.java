@@ -10,20 +10,23 @@ import java.util.function.Supplier;
 
 // server -> client
 public class SetMercStancePacket {
-    private final int stance;
+    private final int attackStance;
+    private final int moveStace;
     private final int entityId;
 
-    public SetMercStancePacket(int stance, int entityId) {
-        this.stance = stance;
+    public SetMercStancePacket(int attackStance, int moveStace, int entityId) {
+        this.attackStance = attackStance;
+        this.moveStace = moveStace;
         this.entityId = entityId;
     }
 
     public SetMercStancePacket(PacketBuffer buf) {
-        this(buf.readInt(), buf.readInt());
+        this(buf.readInt(), buf.readInt(), buf.readInt());
     }
 
     public static void toBytes(SetMercStancePacket msg, PacketBuffer buf) {
-        buf.writeInt(msg.stance);
+        buf.writeInt(msg.attackStance);
+        buf.writeInt(msg.moveStace);
         buf.writeInt(msg.entityId);
     }
 
@@ -33,7 +36,8 @@ public class SetMercStancePacket {
             Entity entity = player.level.getEntity(msg.entityId);
             if (entity instanceof MercenaryEntity) {
                 MercenaryEntity merc = (MercenaryEntity) entity;
-                merc.setStance(msg.stance);
+                merc.setAttackStance(msg.attackStance);
+                merc.setMoveStance(msg.moveStace);
             }
         });
         context.get().setPacketHandled(true);

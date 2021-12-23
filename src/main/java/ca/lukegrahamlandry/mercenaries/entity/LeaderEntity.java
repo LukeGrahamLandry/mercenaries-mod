@@ -15,6 +15,7 @@ import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
+import net.minecraft.entity.merchant.villager.VillagerEntity;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
@@ -49,10 +50,16 @@ public class LeaderEntity extends CreatureEntity {
 
     private boolean canTarget(LivingEntity target) {
         if (!(target instanceof IMob)) return false;
-        if (target instanceof CreeperEntity) return false;
+        if (target instanceof CreeperEntity || target instanceof VillagerEntity) return false;
 
         double distSq = this.distanceToSqr(target);
         return distSq < 9;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        this.updateSwingTime();
     }
 
     @Override
