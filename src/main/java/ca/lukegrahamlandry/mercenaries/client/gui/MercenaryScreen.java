@@ -108,7 +108,7 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
         }
 
     }
-    
+
     private void write(MatrixStack matrixStack, String text, int x, int y, int color){
         this.font.draw(matrixStack, new StringTextComponent(text), x, y, color);
     }

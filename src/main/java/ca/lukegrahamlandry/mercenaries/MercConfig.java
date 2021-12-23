@@ -39,12 +39,12 @@ public class MercConfig {
     public static final ForgeConfigSpec.DoubleValue priceScaleFactor;
     public static final ForgeConfigSpec.IntValue artifactCooldown;
     public static final ForgeConfigSpec.IntValue artifactUseTime;
-    public static final ForgeConfigSpec.BooleanValue takeGearOnAbandon;
     public static final ForgeConfigSpec.BooleanValue generateLeaderHouses;
     public static final ForgeConfigSpec.ConfigValue<String> hirePaymentItem;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> names;
     public static final ForgeConfigSpec.BooleanValue createHorseToRide;
     public static final ForgeConfigSpec.BooleanValue dropItemsOnDeath;
+    public static final ForgeConfigSpec.IntValue rehirePrice;
 
     static {
         final ForgeConfigSpec.Builder serverBuilder = new ForgeConfigSpec.Builder();
@@ -74,15 +74,15 @@ public class MercConfig {
 
         idleFollowDistance = serverBuilder
                 .comment("When there are no targets, how many blocks should you walk away before your mercenaries start following")
-                .defineInRange("idleFollowDistance", 10, 1, Integer.MAX_VALUE);
+                .defineInRange("idleFollowDistance", 8, 1, Integer.MAX_VALUE);
 
         fightingFollowDistance = serverBuilder
                 .comment("When there are targets, how many blocks should you walk away before your mercenaries start following")
-                .defineInRange("fightingFollowDistance", 20, 1, Integer.MAX_VALUE);
+                .defineInRange("fightingFollowDistance", 16, 1, Integer.MAX_VALUE);
 
         teleportDistance = serverBuilder
                 .comment("how many blocks should you walk away before your mercenaries teleport to you")
-                .defineInRange("teleportDistance", 30, 1, Integer.MAX_VALUE);
+                .defineInRange("teleportDistance", 24, 1, Integer.MAX_VALUE);
 
         basePrice = serverBuilder
                 .comment("how many emeralds should your first mercenary cost. this will be scaled up for subsequent hires")
@@ -99,10 +99,6 @@ public class MercConfig {
         artifactUseTime = serverBuilder
                 .comment("UNUSED. ticks it takes the mercenary to use an artifact")
                 .defineInRange("artifactUseTime", 30, 1, Integer.MAX_VALUE);
-
-        takeGearOnAbandon = serverBuilder
-                .comment("when a mercenary abandons you, should it take the equipment you gave with it. if false, the equipment will be dropped on the ground where it last was")
-                .define("takeGearOnAbandon", true);
 
         hirePaymentItem = serverBuilder
                 .comment("the resource location of the item used to pay for new mercenaries")
@@ -124,7 +120,9 @@ public class MercConfig {
                 .comment("when a mercenary is killed, should its inventory drop")
                 .define("dropItemsOnDeath", true);
 
-
+        rehirePrice = serverBuilder
+                .comment("how much should it cost to rehire a mercenary that has abandoned you. Use -1 to make them just leave forever")
+                .defineInRange("rehirePrice", 15, -1, Integer.MAX_VALUE);
 
         server_config = serverBuilder.build();
     }

@@ -71,6 +71,7 @@ public class MercEggItem extends SpawnEggItem {
                 lvt_3_1_.shrink(1);
                 if (e instanceof MercenaryEntity && p_195939_1_.getPlayer() instanceof ServerPlayerEntity){
                     ((MercenaryEntity) e).setOwner(p_195939_1_.getPlayer());
+                    ((MercenaryEntity) e).setCamp(e.blockPosition());
                     SaveMercData.get().addMerc((ServerPlayerEntity) p_195939_1_.getPlayer(), (MercenaryEntity)e);
                 }
             }

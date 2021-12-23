@@ -17,6 +17,7 @@ import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.RandomWalkingGoal;
+import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
@@ -40,6 +41,7 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.network.PacketDistributor;
 
@@ -113,13 +115,15 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     protected void registerGoals() {
         super.registerGoals();
 
+        this.goalSelector.addGoal(1, new SwimGoal(this));
+
         this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
         this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 10));
         // melee attack goal should do this on its ownx
         // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
          this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, this::canTarget));
          this.goalSelector.addGoal(2, new MercFollowGoal(this));
-         this.goalSelector.addGoal(4, new RandomWalkingGoal(this, 0.8D){
+         this.goalSelector.addGoal(4, new RandomWalkingGoal(this, 0.8D, 100, false){
             @Override
             public boolean canContinueToUse() {
                 return MercenaryEntity.this.isIdleMode() && super.canContinueToUse() && !MercenaryEntity.this.hasFindableTarget();
@@ -279,17 +283,24 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
     // called when it runs out of food or money
     private void leaveOwner() {
-        if (!MercConfig.takeGearOnAbandon.get()){
-            for (int i=2;i<20;i++){
-                this.spawnAtLocation(this.inventory.getItem(i));
-            }
-            this.inventory.clearContent();
-            this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left. Its equipment is at " + this.blockPosition()), true);
+        if (this.villageLocation != BlockPos.ZERO){
+            this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries returned to the village at " + this.villageLocation), true);
+
+            ServerWorld world = ((ServerWorld) this.level).getServer().getLevel(World.OVERWORLD);  // TODO: should not assume the village is in the overworld just incase, RS compat etc
+            if (world == null) world = (ServerWorld) this.level; // should never happen;
+
+            this.changeDimension(world);
+            this.teleportToWithTicket(this.villageLocation.getX(), this.villageLocation.getY(), this.villageLocation.getZ());
         } else {
             this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left"), true);
         }
+
         removeFromOwnerData();
-        this.remove();
+        this.setMoveStance(MercenaryEntity.MovementStance.IDLE);
+        this.setAttackStance(MercenaryEntity.AttackStance.DEFEND);
+        this.setTarget(null);
+        this.getNavigation().stop();
+        this.setOwner(null);
     }
 
     private void removeFromOwnerData(){
