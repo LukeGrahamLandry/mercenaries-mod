@@ -22,5 +22,6 @@ public class NetworkInit {
         INSTANCE.registerMessage(nextID(), BuyNewMercPacket.class, BuyNewMercPacket::toBytes, BuyNewMercPacket::new, BuyNewMercPacket::handle);
         INSTANCE.registerMessage(nextID(), OpenLeaderScreenPacket.class, OpenLeaderScreenPacket::toBytes, OpenLeaderScreenPacket::new, OpenLeaderScreenPacket::handle);
         INSTANCE.registerMessage(nextID(), MercKeybindPacket.class, MercKeybindPacket::toBytes, MercKeybindPacket::new, MercKeybindPacket::handle);
+        INSTANCE.registerMessage(nextID(), SetMercCampPacket.class, SetMercCampPacket::toBytes, SetMercCampPacket::new, SetMercCampPacket::handle);
     }
 }

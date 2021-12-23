@@ -2,6 +2,7 @@ package ca.lukegrahamlandry.mercenaries.goals;
 
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.entity.CreatureEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 
 
@@ -20,6 +21,11 @@ public class MercMeleeAttackGoal extends MeleeAttackGoal {
     @Override
     public boolean canContinueToUse() {
         return owner.getAttackType() == MercenaryEntity.AttackType.MELEE && super.canContinueToUse();
+    }
+
+    @Override
+    protected double getAttackReachSqr(LivingEntity target) {
+        return owner.getReachDist() * owner.getReachDist();
     }
 }
 

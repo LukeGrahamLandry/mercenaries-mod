@@ -65,12 +65,11 @@ public class MercKeybindPacket {
         AtomicInteger count = new AtomicInteger();
         SaveMercData.get().forLoadedMercBelongingTo(player, (merc) -> {
             merc.setAttackStance(MercenaryEntity.AttackStance.PASSIVE);
-            merc.setMoveStance(MercenaryEntity.MovementStance.STAY);
-            merc.setPos(player.getX(), player.getY(), player.getZ());
+            merc.setMoveStance(MercenaryEntity.MovementStance.FOLLOW);
             count.getAndIncrement();
         });
 
         int total = SaveMercData.get().getMercs(player).size();
-        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries teleported and set to passive-stay"), true);
+        player.displayClientMessage(new StringTextComponent(count.get() + "/" + total + " mercenaries set to passive-follow"), true);
     }
 }

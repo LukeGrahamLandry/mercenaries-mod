@@ -3,6 +3,7 @@ package ca.lukegrahamlandry.mercenaries.client.gui;
 import ca.lukegrahamlandry.mercenaries.MercenariesMain;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
+import ca.lukegrahamlandry.mercenaries.network.SetMercCampPacket;
 import ca.lukegrahamlandry.mercenaries.network.SetMercStancePacket;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -13,6 +14,7 @@ import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
@@ -66,6 +68,13 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
             this.buttons.clear();
             this.init();
         }));
+
+        this.addButton(new Button(i - 90, j +20+30+30+30, 80, 20, new StringTextComponent("Set Camp Pos"), (p_214318_1_) -> {
+            this.merc.setCamp(this.merc.blockPosition());
+            NetworkInit.INSTANCE.sendToServer(new SetMercCampPacket(this.merc.getId()));
+            this.buttons.clear();
+            this.init();
+        }));
     }
 
     protected void renderLabels(MatrixStack matrixStack, int p_230451_2_, int p_230451_3_) {
@@ -90,6 +99,18 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
         super.render(matrixStack, p_230430_2_, p_230430_3_, p_230430_4_);
         this.xMouse = (float)p_230430_2_;
         this.yMouse = (float)p_230430_3_;
+
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        BlockPos camp = this.merc.getCamp();
+        if (camp != null){
+            this.write(matrixStack, "(" + camp.getX() + ", " + camp.getY() + ", " + camp.getZ() + ")", i - 90, j +20+30+30+30 + 25, 0xFFFFFF);
+        }
+
+    }
+    
+    private void write(MatrixStack matrixStack, String text, int x, int y, int color){
+        this.font.draw(matrixStack, new StringTextComponent(text), x, y, color);
     }
 
     @Override

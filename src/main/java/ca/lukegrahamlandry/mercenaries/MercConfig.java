@@ -44,6 +44,7 @@ public class MercConfig {
     public static final ForgeConfigSpec.ConfigValue<String> hirePaymentItem;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> names;
     public static final ForgeConfigSpec.BooleanValue createHorseToRide;
+    public static final ForgeConfigSpec.BooleanValue dropItemsOnDeath;
 
     static {
         final ForgeConfigSpec.Builder serverBuilder = new ForgeConfigSpec.Builder();
@@ -118,6 +119,12 @@ public class MercConfig {
         createHorseToRide = serverBuilder
                 .comment("if true, when a player rides a horse, their followers will spawn horses to ride (which disappear when player stops riding)")
                 .define("createHorseToRide", true);
+
+        dropItemsOnDeath = serverBuilder
+                .comment("when a mercenary is killed, should its inventory drop")
+                .define("dropItemsOnDeath", true);
+
+
 
         server_config = serverBuilder.build();
     }

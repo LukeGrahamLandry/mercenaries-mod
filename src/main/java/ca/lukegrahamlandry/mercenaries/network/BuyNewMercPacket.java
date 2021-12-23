@@ -64,6 +64,7 @@ public class BuyNewMercPacket {
                 MercenaryEntity merc = EntityInit.MERCENARY.get().create(player.level);
                 merc.setOwner(player);
                 merc.setPos(player.getX(), player.getY(), player.getZ());
+                merc.villageLocation = player.blockPosition();
                 SaveMercData.get().addMerc(player, merc);
                 player.level.addFreshEntity(merc);
 

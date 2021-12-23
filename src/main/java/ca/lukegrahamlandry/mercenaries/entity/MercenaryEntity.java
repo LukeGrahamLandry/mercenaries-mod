@@ -11,6 +11,7 @@ import ca.lukegrahamlandry.mercenaries.init.EntityInit;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.integration.FakePlayerThatRedirects;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.*;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
@@ -33,10 +34,13 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.*;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.network.PacketDistributor;
 
 import java.util.Optional;
@@ -52,6 +56,9 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     public static final DataParameter<Integer> MOVE_STANCE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
 
     public static final DataParameter<Optional<UUID>> OWNER = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.OPTIONAL_UUID);
+    public static final DataParameter<Optional<BlockPos>> CAMP = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.OPTIONAL_BLOCK_POS);
+    public BlockPos villageLocation = BlockPos.ZERO;
+    public RegistryKey<World> campDimension = World.OVERWORLD;
 
     int foodTimer = 0;
     int moneyTimer = 0;
@@ -91,10 +98,15 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         this.entityData.define(ATTACK_STANCE, 0);
         this.entityData.define(MOVE_STANCE, 0);
         this.entityData.define(OWNER, Optional.empty());
+        this.entityData.define(CAMP, Optional.empty());
     }
 
     public static AttributeModifierMap.MutableAttribute makeAttributes() {
-        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)0.33F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D);
+        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)0.33F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D).add(ForgeMod.REACH_DISTANCE.get(), 4D);
+    }
+
+    public double getReachDist(){
+        return this.getAttributeValue(ForgeMod.REACH_DISTANCE.get());
     }
 
     @Override
@@ -130,7 +142,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (target instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE) return false;
 
         if (this.isAttackStace()) {
-            return !this.isStayMode() || this.distanceToSqr(target) < 9;
+            return !this.isStayMode() || this.distanceToSqr(target) < (this.getReachDist() * this.getReachDist());
         }
 
         return false;
@@ -409,6 +421,18 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return this.getTarget() != null && this.getTarget().isAlive() && !this.isPassiveStace() && this.distanceToSqr(this.getTarget()) < 32*32;
     }
 
+    public void setCamp(BlockPos pos) {
+        this.entityData.set(CAMP, Optional.of(pos));
+    }
+
+    public BlockPos getCamp(){
+        if (this.entityData.get(CAMP).isPresent()){
+            return this.entityData.get(CAMP).get();
+        } else {
+            return null;
+        }
+    }
+
 
     public enum AttackType{
         NONE,
@@ -458,6 +482,17 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         this.entityData.get(OWNER).ifPresent(owner -> {
             tag.putUUID("owner", owner);
         });
+        this.entityData.get(CAMP).ifPresent(camp -> {
+            tag.putInt("campx", camp.getX());
+            tag.putInt("campy", camp.getY());
+            tag.putInt("campz", camp.getZ());
+
+            tag.putString("campDimension", this.campDimension.location().toString());
+        });
+
+        tag.putInt("villagex", this.villageLocation.getX());
+        tag.putInt("villagey", this.villageLocation.getY());
+        tag.putInt("villagez", this.villageLocation.getZ());
 
         tag.putInt("sharedArtifactCooldown",  this.sharedArtifactCooldown);
     }
@@ -487,21 +522,39 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
             this.entityData.set(OWNER, Optional.of(tag.getUUID("owner")));
         }
 
+        if (tag.contains("campx")){
+            this.entityData.set(CAMP, Optional.of(new BlockPos(tag.getInt("campx"), tag.getInt("campy"), tag.getInt("campz"))));
+            this.campDimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(tag.getString("campDimension")));
+        }
+
+        this.villageLocation = new BlockPos(tag.getInt("villagex"), tag.getInt("villagey"), tag.getInt("villagez"));
+
         this.sharedArtifactCooldown = tag.getInt("sharedArtifactCooldown");
     }
 
+
     @Override
     protected void dropCustomDeathLoot(DamageSource source, int looting, boolean wasPlayer) {
-        super.dropCustomDeathLoot(source, looting, wasPlayer);
-        for (int i=2;i<20;i++){
-            this.spawnAtLocation(this.inventory.getItem(i));
+        if (MercConfig.dropItemsOnDeath.get()){
+            for(EquipmentSlotType equipmentslottype : EquipmentSlotType.values()) {
+                ItemStack itemstack = this.getItemBySlot(equipmentslottype);
+                if (!itemstack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(itemstack)) {
+                    this.spawnAtLocation(itemstack);
+                    this.setItemSlot(equipmentslottype, ItemStack.EMPTY);
+                }
+            }
+
+            for (int i=2;i<20;i++){
+                this.spawnAtLocation(this.inventory.getItem(i));
+            }
+            this.inventory.clearContent();
         }
-        this.inventory.clearContent();
     }
 
     @Override
-    public void die(DamageSource p_70645_1_) {
-        super.die(p_70645_1_);
+    public void die(DamageSource source) {
+        System.out.println("die");
+        super.die(source);
         removeFromOwnerData();
     }
 
