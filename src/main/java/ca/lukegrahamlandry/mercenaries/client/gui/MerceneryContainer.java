@@ -21,11 +21,8 @@ public class MerceneryContainer extends Container {
     private final IInventory mercInventory;
     private final MercenaryEntity merc;
 
-
-    public static final ResourceLocation EMPTY_ARMOR_SLOT_SWORD = new ResourceLocation("item/sword_outline");
     private static final ResourceLocation[] TEXTURE_EMPTY_SLOTS = new ResourceLocation[]{EMPTY_ARMOR_SLOT_BOOTS, EMPTY_ARMOR_SLOT_LEGGINGS, EMPTY_ARMOR_SLOT_CHESTPLATE, EMPTY_ARMOR_SLOT_HELMET};
     private static final EquipmentSlotType[] SLOT_IDS = new EquipmentSlotType[]{EquipmentSlotType.HEAD, EquipmentSlotType.CHEST, EquipmentSlotType.LEGS, EquipmentSlotType.FEET};
-
 
     public MerceneryContainer(int id, PlayerInventory playerInventory, IInventory mercInventory, final MercenaryEntity merc) {
         // dont have to register the gui type because I'm sending the packet manually. just in case I want to send extra info later

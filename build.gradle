@@ -58,6 +58,9 @@ minecraft {
             // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
             property 'forge.logging.console.level', 'debug'
 
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
             mods {
                 mercenaries {
                     source sourceSets.main
@@ -140,6 +143,9 @@ dependencies {
     runtimeOnly fg.deobf("mezz.jei:jei-1.16.5:7.6.4.90")
 
     compileOnly fg.deobf("curse.maven:dungeons-gear-401247:3377033")
+    compileOnly fg.deobf("curse.maven:repurposed-structures-368293:3561379")
+
+    runtimeOnly fg.deobf("curse.maven:repurposed-structures-368293:3561379")
 
     // You may put jars on which you depend on in ./libs or you may define them like so..
     // compile "some.group:artifact:version:classifier"

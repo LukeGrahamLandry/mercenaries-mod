@@ -24,8 +24,8 @@ public class MercenaryLeaderScreen extends Screen {
     private float xMouse;
     private float yMouse;
     private int price;
-    private int imageWidth = 180;
-    private int imageHeight = 185;
+    private int imageWidth = 255;
+    private int imageHeight = 255;
     private Button hireButton;
 
     public MercenaryLeaderScreen(PlayerEntity player, LeaderEntity merc, int price) {
@@ -42,7 +42,11 @@ public class MercenaryLeaderScreen extends Screen {
         String text = this.price != Integer.MAX_VALUE ? "Buy New Merc (" + price + ")" : "Cannot Hire Another";
         int i = (this.width - this.imageWidth) / 2;
         int j = (this.height - this.imageHeight) / 2;
-        this.hireButton = new Button(i+15, j+15, 150, 20, new StringTextComponent(text), (p_214318_1_) -> {
+        int buttonWidth = 150;
+        int xStart = i + ((this.imageWidth - buttonWidth) / 2);
+        int yStart = j + 30;
+
+        this.hireButton = new Button(xStart, yStart, buttonWidth, 20, new StringTextComponent(text), (p_214318_1_) -> {
             if (this.hireButton.active) {
                 NetworkInit.INSTANCE.sendToServer(new BuyNewMercPacket());
                 Minecraft.getInstance().setScreen(null);
