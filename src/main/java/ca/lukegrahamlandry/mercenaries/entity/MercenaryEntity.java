@@ -10,6 +10,7 @@ import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.init.EntityInit;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.integration.FakePlayerThatRedirects;
+import ca.lukegrahamlandry.mercenaries.network.OpenMercRehireScreenPacket;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.*;
@@ -312,14 +313,20 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
     @Override
     public ActionResultType mobInteract(PlayerEntity player, Hand p_184230_2_) {
-        if (!this.level.isClientSide()){
-            player.closeContainer();
-
-            ((ServerPlayerEntity)player).nextContainerCounter();
-            NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity)player), new OpenMercenaryInventoryPacket(((ServerPlayerEntity)player).containerCounter, this.getId()));
-            player.containerMenu = new MerceneryContainer(((ServerPlayerEntity)player).containerCounter, player.inventory, this.inventory, this);
-            player.containerMenu.addSlotListener(((ServerPlayerEntity)player));
+        if (!this.level.isClientSide()) {
+            if (this.getOwner() == null) {
+                NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new OpenMercRehireScreenPacket((ServerPlayerEntity) player, this));
+            } else if (this.getOwner().getUUID().equals(player.getUUID())) {
+                player.closeContainer();
+                ((ServerPlayerEntity) player).nextContainerCounter();
+                NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new OpenMercenaryInventoryPacket(((ServerPlayerEntity) player).containerCounter, this.getId()));
+                player.containerMenu = new MerceneryContainer(((ServerPlayerEntity) player).containerCounter, player.inventory, this.inventory, this);
+                player.containerMenu.addSlotListener(((ServerPlayerEntity) player));
+            } else {
+                player.displayClientMessage(new StringTextComponent("This is not your mercenary"), true);
+            }
         }
+
         return ActionResultType.SUCCESS;
     }
 

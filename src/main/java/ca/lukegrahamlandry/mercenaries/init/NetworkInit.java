@@ -23,5 +23,7 @@ public class NetworkInit {
         INSTANCE.registerMessage(nextID(), OpenLeaderScreenPacket.class, OpenLeaderScreenPacket::toBytes, OpenLeaderScreenPacket::new, OpenLeaderScreenPacket::handle);
         INSTANCE.registerMessage(nextID(), MercKeybindPacket.class, MercKeybindPacket::toBytes, MercKeybindPacket::new, MercKeybindPacket::handle);
         INSTANCE.registerMessage(nextID(), SetMercCampPacket.class, SetMercCampPacket::toBytes, SetMercCampPacket::new, SetMercCampPacket::handle);
+        INSTANCE.registerMessage(nextID(), RehireMercPacket.class, RehireMercPacket::toBytes, RehireMercPacket::new, RehireMercPacket::handle);
+        INSTANCE.registerMessage(nextID(), OpenMercRehireScreenPacket.class, OpenMercRehireScreenPacket::toBytes, OpenMercRehireScreenPacket::new, OpenMercRehireScreenPacket::handle);
     }
 }

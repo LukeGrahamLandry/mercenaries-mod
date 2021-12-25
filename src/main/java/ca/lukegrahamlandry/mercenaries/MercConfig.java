@@ -65,7 +65,7 @@ public class MercConfig {
                 .defineInRange("maxMercs", 3, 0, Integer.MAX_VALUE);
 
         emeraldValue = serverBuilder
-                .comment("How many money units is an emerald worth")
+                .comment("How many money units is an emerald worth. (this will actually be the hirePaymentItem which defaults to emerald)")
                 .defineInRange("emeraldValue", 4, 0, Integer.MAX_VALUE);
 
         diamondValue = serverBuilder
@@ -144,7 +144,7 @@ public class MercConfig {
     }
 
     public static int getMoneyValue(Item item){
-        if (item == Items.EMERALD) return emeraldValue.get();
+        if (item == buyMercItem()) return emeraldValue.get();
         if (item == Items.DIAMOND) return diamondValue.get();
 
         return 0;
