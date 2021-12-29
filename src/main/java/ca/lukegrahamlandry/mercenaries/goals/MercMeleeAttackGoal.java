@@ -25,7 +25,7 @@ public class MercMeleeAttackGoal extends MeleeAttackGoal {
 
     @Override
     protected double getAttackReachSqr(LivingEntity target) {
-        return owner.getReachDist() * owner.getReachDist();
+        return owner.getReachDistSq();
     }
 }
 

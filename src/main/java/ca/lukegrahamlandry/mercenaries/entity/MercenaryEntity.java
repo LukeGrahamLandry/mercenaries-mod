@@ -7,6 +7,7 @@ import ca.lukegrahamlandry.mercenaries.client.gui.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.goals.MercFollowGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
+import ca.lukegrahamlandry.mercenaries.goals.MercShieldGoal;
 import ca.lukegrahamlandry.mercenaries.init.EntityInit;
 import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.integration.FakePlayerThatRedirects;
@@ -63,6 +64,9 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     public BlockPos villageLocation = BlockPos.ZERO;
     public RegistryKey<World> campDimension = World.OVERWORLD;
 
+    // > 0 when cant use, < 0 when using
+    public int shieldCoolDown = 0;
+
     int foodTimer = 0;
     int moneyTimer = 0;
 
@@ -118,6 +122,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
         this.goalSelector.addGoal(1, new SwimGoal(this));
 
+        this.goalSelector.addGoal(1, new MercShieldGoal(this));
         this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
         this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 10));
         // melee attack goal should do this on its ownx
@@ -147,7 +152,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (target instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE) return false;
 
         if (this.isAttackStace()) {
-            return !this.isStayMode() || this.distanceToSqr(target) < (this.getReachDist() * this.getReachDist());
+            return !this.isStayMode() || this.distanceToSqr(target) < this.getReachDistSq();
         }
 
         return false;
@@ -161,6 +166,7 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         if (!this.level.isClientSide()){
             this.cooldowns.tick();
             this.sharedArtifactCooldown -= Math.signum(this.sharedArtifactCooldown);
+            this.shieldCoolDown -= Math.signum(this.shieldCoolDown);
 
             this.moneyTimer++;
             if (this.moneyTimer > MercConfig.getMoneyDecayRate()){
@@ -451,18 +457,23 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         }
     }
 
+    public double getReachDistSq() {
+        return Math.pow(getReachDist(), 2);
+    }
+
 
     public enum AttackType{
         NONE,
         MELEE,
         RANGE,
+        SHIELD,
         ARTIFACT
     }
 
     public AttackType getAttackType() {
-        if (this.getArtifactCooldown() < 0) {
-            return AttackType.ARTIFACT;
-        }
+        if (this.shieldCoolDown < 0) return AttackType.SHIELD;
+        if (this.getArtifactCooldown() < 0) return AttackType.ARTIFACT;
+
         if (this.getMainHandItem().getItem().getAttributeModifiers(EquipmentSlotType.MAINHAND, this.getMainHandItem()).containsKey(Attributes.ATTACK_DAMAGE)){
             this.attackType = AttackType.MELEE;
         } else if (this.getMainHandItem().getItem() instanceof ShootableItem){
