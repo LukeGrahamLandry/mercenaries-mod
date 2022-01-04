@@ -45,6 +45,7 @@ public class MercConfig {
     public static final ForgeConfigSpec.BooleanValue createHorseToRide;
     public static final ForgeConfigSpec.BooleanValue dropItemsOnDeath;
     public static final ForgeConfigSpec.IntValue rehirePrice;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> dialogueLinesCount;
 
     static {
         final ForgeConfigSpec.Builder serverBuilder = new ForgeConfigSpec.Builder();
@@ -123,6 +124,10 @@ public class MercConfig {
         rehirePrice = serverBuilder
                 .comment("how much should it cost to rehire a mercenary that has abandoned you. Use -1 to make them just leave forever")
                 .defineInRange("rehirePrice", 15, -1, Integer.MAX_VALUE);
+        dialogueLinesCount = serverBuilder
+                .comment("how many dialogue lines are defined for each category. [firstLeader, leader] the text will be taken from the lang mercenaries.dialogue.name_0, mercenaries.dialogue.name_1, etc")
+                .define("dialogueLinesCount", Arrays.asList(1, 2));
+
 
         server_config = serverBuilder.build();
     }

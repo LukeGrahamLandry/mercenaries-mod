@@ -1,8 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.goals;
 
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
-import com.mojang.datafixers.util.Pair;
-import javafx.util.StringConverter;
 import net.minecraft.command.arguments.EntityAnchorArgument;
 import net.minecraft.entity.IRangedAttackMob;
 import net.minecraft.entity.LivingEntity;

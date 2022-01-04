@@ -9,6 +9,7 @@
     "JigsawStructureMixin"
   ],
   "client": [
+    "M1Fix"
   ],
   "injectors": {
     "defaultRequire": 1

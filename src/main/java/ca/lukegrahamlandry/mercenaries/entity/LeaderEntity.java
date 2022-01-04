@@ -23,6 +23,8 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.NBTUtil;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
@@ -30,9 +32,10 @@ import net.minecraft.util.*;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.PacketDistributor;
 
+import java.util.*;
+
 public class LeaderEntity extends CreatureEntity {
     private static final DataParameter<Integer> TEXTURE_TYPE = EntityDataManager.defineId(LeaderEntity.class, DataSerializers.INT);
-
 
     public LeaderEntity(EntityType<LeaderEntity> p_i48576_1_, World p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
@@ -85,6 +88,7 @@ public class LeaderEntity extends CreatureEntity {
     protected ActionResultType mobInteract(PlayerEntity player, Hand hand) {
         if (!this.level.isClientSide()){
             NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity)player), new OpenLeaderScreenPacket((ServerPlayerEntity) player, this));
+            this.playerInteractions.add(player.getUUID());
         }
         return ActionResultType.SUCCESS;
     }
@@ -103,5 +107,27 @@ public class LeaderEntity extends CreatureEntity {
 
     public ResourceLocation getTexture() {
         return MercTextureList.getLeaderTexture(this.getEntityData().get(TEXTURE_TYPE));
+    }
+
+    public final Set<UUID> playerInteractions = new HashSet<>();
+
+    @Override
+    public boolean save(CompoundNBT tag) {
+        ListNBT interactions = new ListNBT();
+        for (UUID id : this.playerInteractions){
+            interactions.add(NBTUtil.createUUID(id));
+        }
+        tag.put("interactions", interactions);
+        return super.save(tag);
+    }
+
+    @Override
+    public void load(CompoundNBT tag) {
+        ListNBT interactions = tag.getList("interactions", 11);
+        for (int j=0;j<interactions.size();j++){
+            this.playerInteractions.add(NBTUtil.loadUUID(interactions.get(j)));
+        }
+
+        super.load(tag);
     }
 }

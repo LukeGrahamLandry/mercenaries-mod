@@ -46,6 +46,10 @@ minecraft {
 
             arg "-mixin.config=mercenaries.mixins.json"
 
+            // adding this line + regen runs, makes the loading window not happen but
+            // does not fix IllegalStateException: GLFW error before init: [0x1000C]Cocoa: Regular windows do not have icons on macOS
+            // property 'fml.earlyprogresswindow', 'false'
+
             // Recommended logging data for a userdev environment
             // The markers can be changed as needed. 
             // "SCAN": For mods scan.
@@ -207,3 +211,5 @@ apply plugin: 'org.spongepowered.mixin'
 mixin {
     add sourceSets.main, "mercenaries.refmap.json"
 }
+
+apply from: "https://moddingtutorials.org/applesilicon.gradle"

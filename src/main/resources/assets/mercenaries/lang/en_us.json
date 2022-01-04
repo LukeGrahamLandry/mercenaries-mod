@@ -8,5 +8,9 @@
   "key.merc_stop": "All Return",
 
   "item.mercenaries.merc_spawn_egg": "Mercenary Spawn Egg",
-  "item.mercenaries.leader_spawn_egg": "Mercenary Leader Spawn Egg"
+  "item.mercenaries.leader_spawn_egg": "Mercenary Leader Spawn Egg",
+
+  "mercenaries.dialogue.firstLeader_0": "Hello friend, I represent the Wandering Company, we pride ourselves in protecting villages out here in the wilderness! Say, you look like a resourceful adventurer, are you looking for some some extra capable hands for your journey?",
+  "mercenaries.dialogue.leader_0": "How can I help you this time, friend?",
+  "mercenaries.dialogue.leader_1": "My mercenaries are fearless. They will serve you well."
 }
