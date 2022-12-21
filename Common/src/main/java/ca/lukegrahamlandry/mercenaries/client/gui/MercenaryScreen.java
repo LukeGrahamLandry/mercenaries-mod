@@ -8,6 +8,8 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
 import net.minecraft.client.gui.screen.inventory.InventoryScreen;
+import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
@@ -17,9 +19,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.entity.player.Inventory;
 
 
-public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
+public class MercenaryScreen extends AbstractContainerScreen<MerceneryContainer> {
     private static final ResourceLocation GUARD_GUI_TEXTURES_NO_SWORD = new ResourceLocation(MercenariesMod.MOD_ID, "textures/container/inventory_old.png");
     private static final ResourceLocation GUARD_GUI_TEXTURES = new ResourceLocation(MercenariesMod.MOD_ID, "textures/container/inventory.png");
     private final MercenaryEntity merc;
@@ -37,7 +40,7 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
             "Follow", "Idle", "Stay"
     };
 
-    public MercenaryScreen(MerceneryContainer container, PlayerInventory playerInventory, MercenaryEntity merc) {
+    public MercenaryScreen(MerceneryContainer container, Inventory playerInventory, MercenaryEntity merc) {
         super(container, playerInventory, merc.getDisplayName());
         this.merc = merc;
         this.passEvents = false;
@@ -54,7 +57,7 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
         this.addButton(new Button(i - 90, j +20+30, 80, 20, stanceText, (p_214318_1_) -> {
             this.attackStance = (this.attackStance + 1) % 3;
             this.merc.setAttackStance(this.attackStance);
-            NetworkInit.INSTANCE.sendToServer(new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()));
+            new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()).sendToServer();
             this.buttons.clear();
             this.init();
         }));
@@ -63,14 +66,14 @@ public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
         this.addButton(new Button(i - 90, j +20+30+30, 80, 20, stanceText, (p_214318_1_) -> {
             this.moveStance = (this.moveStance + 1) % 3;
             this.merc.setMoveStance(this.moveStance);
-            NetworkInit.INSTANCE.sendToServer(new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()));
+            new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()).sendToServer();
             this.buttons.clear();
             this.init();
         }));
 
         this.addButton(new Button(i - 90, j +20+30+30+30, 80, 20, new StringTextComponent("Set Camp Pos"), (p_214318_1_) -> {
             this.merc.setCamp(this.merc.blockPosition());
-            NetworkInit.INSTANCE.sendToServer(new SetMercCampPacket(this.merc.getId()));
+            new SetMercCampPacket(this.merc.getId()).sendToServer();
             this.buttons.clear();
             this.init();
         }));

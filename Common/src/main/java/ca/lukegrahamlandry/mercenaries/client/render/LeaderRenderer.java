@@ -1,35 +1,20 @@
 package ca.lukegrahamlandry.mercenaries.client.render;
 
 import ca.lukegrahamlandry.mercenaries.entity.LeaderEntity;
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.client.renderer.entity.LivingRenderer;
+import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.*;
-import net.minecraft.client.renderer.entity.model.BipedModel;
-import net.minecraft.client.renderer.entity.model.PlayerModel;
-import net.minecraft.client.renderer.model.ModelRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.CrossbowItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.UseAction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.HandSide;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.math.vector.Vector3f;
 
-public class LeaderRenderer extends LivingRenderer<LeaderEntity, PlayerModel<LeaderEntity>> {
-    public LeaderRenderer(EntityRendererManager p_i46102_1_) {
-        this(p_i46102_1_, false);
+public class LeaderRenderer extends LivingEntityRenderer<LeaderEntity, PlayerModel<LeaderEntity>> {
+    public LeaderRenderer(EntityRendererProvider.Context context) {
+        this(context, false);
     }
 
-    public LeaderRenderer(EntityRendererManager p_i46103_1_, boolean p_i46103_2_) {
-        super(p_i46103_1_, new PlayerModel<>(0.0F, p_i46103_2_), 0.5F);
+    public LeaderRenderer(EntityRendererProvider.Context context, boolean p_i46103_2_) {
+        super(context, new PlayerModel<>(0.0F, p_i46103_2_), 0.5F);
         this.addLayer(new BipedArmorLayer<>(this, new BipedModel(0.5F), new BipedModel(1.0F)));
         this.addLayer(new HeldItemLayer<>(this));
         this.addLayer(new ArrowLayer<>(this));

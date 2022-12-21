@@ -3,13 +3,9 @@ package ca.lukegrahamlandry.mercenaries.client.gui;
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import ca.lukegrahamlandry.mercenaries.network.RehireMercPacket;
-import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.entity.player.Player;
 
 
 public class RehireMercScreen extends Screen {
@@ -27,7 +23,7 @@ public class RehireMercScreen extends Screen {
     private int imageHeight = 255;
     private Button hireButton;
 
-    public RehireMercScreen(PlayerEntity player, MercenaryEntity merc, int price) {
+    public RehireMercScreen(Player player, MercenaryEntity merc, int price) {
         super(new StringTextComponent("Mercenary"));
         this.player = player;
         this.merc = merc;
@@ -47,7 +43,7 @@ public class RehireMercScreen extends Screen {
 
         this.hireButton = new Button(xStart, yStart, buttonWidth, 20, new StringTextComponent(text), (p_214318_1_) -> {
             if (this.hireButton.active) {
-                NetworkInit.INSTANCE.sendToServer(new RehireMercPacket(this.merc.getId()));
+                new RehireMercPacket(this.merc.getId()).sendToServer();
                 Minecraft.getInstance().setScreen(null);
             }
         });

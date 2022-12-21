@@ -34,7 +34,7 @@ public class MiscEventHandler {
         long difference = 24000 - oldTime +  newTime;
         ((ServerWorld)event.getWorld()).getAllEntities().forEach((entity -> {
             if (entity instanceof MercenaryEntity){
-                ((MercenaryEntity)entity).jumpTime(difference);
+                ((MercenaryEntity)entity).skipTime(difference);
                 ((MercenaryEntity) entity).heal(20);
             }
         }));

@@ -2,6 +2,7 @@ package ca.lukegrahamlandry.mercenaries.client.gui;
 
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import com.mojang.datafixers.util.Pair;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -12,19 +13,22 @@ import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import static net.minecraft.inventory.container.PlayerContainer.*;
 
-public class MerceneryContainer extends Container {
-    private final IInventory mercInventory;
+public class MerceneryContainer extends AbstractContainerMenu {
+    private final SimpleContainer mercInventory;
     private final MercenaryEntity merc;
 
     private static final ResourceLocation[] TEXTURE_EMPTY_SLOTS = new ResourceLocation[]{EMPTY_ARMOR_SLOT_BOOTS, EMPTY_ARMOR_SLOT_LEGGINGS, EMPTY_ARMOR_SLOT_CHESTPLATE, EMPTY_ARMOR_SLOT_HELMET};
     private static final EquipmentSlotType[] SLOT_IDS = new EquipmentSlotType[]{EquipmentSlotType.HEAD, EquipmentSlotType.CHEST, EquipmentSlotType.LEGS, EquipmentSlotType.FEET};
 
-    public MerceneryContainer(int id, PlayerInventory playerInventory, IInventory mercInventory, final MercenaryEntity merc) {
+    public MerceneryContainer(int id, Inventory playerInventory, SimpleContainer mercInventory, final MercenaryEntity merc) {
         // dont have to register the gui type because I'm sending the packet manually. just in case I want to send extra info later
         super(null, id);
         this.mercInventory = mercInventory;

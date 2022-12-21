@@ -11,10 +11,15 @@ import ca.lukegrahamlandry.mercenaries.goals.MercShieldGoal;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercRehireScreenPacket;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import ca.lukegrahamlandry.mercenaries.wrapped.MercEntityData;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
@@ -24,16 +29,15 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
+import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Predicate;
 
 public class MercenaryEntity extends Mob implements IRangedAttackMob {
-    MercEntityData data = new MercEntityData();
+    public MercEntityData data = new MercEntityData();
 
     public SimpleContainer inventory = new SimpleContainer(24);
     public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, Level p_i48576_2_) {
@@ -169,22 +173,22 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
     }
 
     @Override
-    public ActionResultType mobInteract(PlayerEntity player, Hand p_184230_2_) {
+    public InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (!this.level.isClientSide()) {
             if (this.getOwner() == null) {
                 NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new OpenMercRehireScreenPacket((ServerPlayerEntity) player, this));
             } else if (this.getOwner().getUUID().equals(player.getUUID())) {
                 player.closeContainer();
-                ((ServerPlayerEntity) player).nextContainerCounter();
-                NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new OpenMercenaryInventoryPacket(((ServerPlayerEntity) player).containerCounter, this.getId()));
-                player.containerMenu = new MerceneryContainer(((ServerPlayerEntity) player).containerCounter, player.inventory, this.inventory, this);
-                player.containerMenu.addSlotListener(((ServerPlayerEntity) player));
+                ((ServerPlayer) player).nextContainerCounter();
+                new OpenMercenaryInventoryPacket(((ServerPlayer)player).containerCounter, this.getId()).sendToClient((ServerPlayer) player);
+                player.containerMenu = new MerceneryContainer(((ServerPlayer) player).containerCounter, player.getInventory(), this.inventory, this);
+                player.containerMenu.addSlotListener(((ServerPlayer) player).containerListener);
             } else {
-                player.displayClientMessage(new StringTextComponent("This is not your mercenary"), true);
+                player.displayClientMessage(Component.literal("This is not your mercenary"), true);
             }
         }
 
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
 
@@ -228,13 +232,13 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
         return this.data.synced.money.value;
     }
 
-    public void jumpTime(long ticks) {
+    public void skipTime(long ticks) {
         this.data.server.moneyTimer += ticks;
         this.data.server.foodTimer += ticks;
     }
 
-    public void setAttackStance(int stance) {
-        this.entityData.set(ATTACK_STANCE, stance);
+    public void setAttackStance(AttackStance stance) {
+        this.data.synced.attackStance = stance;
         if (this.isPassiveStace()){
             this.setTarget(null);
         }
@@ -248,15 +252,21 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
     public boolean isPassiveStace(){
         return this.getAttackStance() == AttackStance.PASSIVE;
     }
-    public int getAttackStance() {
-        return this.entityData.get(ATTACK_STANCE);
+    public AttackStance getAttackStance() {
+        return this.data.synced.attackStance;
     }
 
-    public void setMoveStance(int stance) {
-        this.entityData.set(MOVE_STANCE, stance);
+    public void setMoveStance(MovementStance stance) {
+        this.data.synced.moveStance = stance;
+        this.syncData();
     }
-    public int getMoveStance() {
-        return this.entityData.get(MOVE_STANCE);
+
+    private void syncData() {
+        // TODO
+    }
+
+    public MovementStance getMoveStance() {
+        return this.data.synced.moveStance;
     }
     public boolean isFollowMode(){
         return this.getMoveStance() == MovementStance.FOLLOW;
@@ -286,19 +296,20 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
     }
 
     public void setCamp(BlockPos pos) {
-        this.entityData.set(CAMP, Optional.of(pos));
+        this.data.synced.camp = pos;
+        this.syncData();
     }
 
     public BlockPos getCamp(){
-        if (this.entityData.get(CAMP).isPresent()){
-            return this.entityData.get(CAMP).get();
-        } else {
-            return null;
-        }
+        return this.data.synced.camp;
     }
 
     public double getReachDistSq() {
         return Math.pow(getReachDist(), 2);
+    }
+
+    public boolean isOwner(ServerPlayer player) {
+        return Objects.equals(player.getUUID(), this.data.server.owner);
     }
 
 
@@ -330,11 +341,11 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
         super.addAdditionalSaveData(tag);
         tag.putString("mercdata", JsonHelper.get().toJson(this.data));
 
-        ListNBT listnbt = new ListNBT();
+        ListTag listnbt = new ListTag();
         for(int i = 0; i < this.inventory.getContainerSize(); ++i) {
             ItemStack itemstack = this.inventory.getItem(i);
             if (!itemstack.isEmpty()) {
-                CompoundNBT compoundnbt = new CompoundNBT();
+                CompoundTag compoundnbt = new CompoundTag();
                 compoundnbt.putByte("Slot", (byte)i);
                 itemstack.save(compoundnbt);
                 listnbt.add(compoundnbt);
@@ -349,10 +360,10 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
 
         if (tag.contains("mercdata")) this.data = JsonHelper.get().fromJson(tag.getString("mercdata"), MercEntityData.class);
 
-        ListNBT listnbt = tag.getList("Items", 10);
+        ListTag listnbt = tag.getList("Items", 10);
 
         for(int i = 0; i < listnbt.size(); ++i) {
-            CompoundNBT compoundnbt = listnbt.getCompound(i);
+            CompoundTag compoundnbt = listnbt.getCompound(i);
             int j = compoundnbt.getByte("Slot") & 255;
             if (j >= 0 && j < this.inventory.getContainerSize()) {
                 this.inventory.setItem(j, ItemStack.of(compoundnbt));

@@ -3,20 +3,9 @@ package ca.lukegrahamlandry.mercenaries.client.gui;
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.LeaderEntity;
 import ca.lukegrahamlandry.mercenaries.network.BuyNewMercPacket;
-import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.button.Button;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.entity.player.Player;
 
 public class MercenaryLeaderScreen extends Screen {
     private static final ResourceLocation TEXTURE = new ResourceLocation(MercenariesMod.MOD_ID, "textures/container/blank.png");
@@ -35,11 +24,8 @@ public class MercenaryLeaderScreen extends Screen {
     private int imageHeight = 255;
     private Button hireButton;
 
-    List<TextComponent> dialogue = new ArrayList<>();
-    List<Integer> dialogueIndexes = new ArrayList<>(); // dont repeat
-
-    public MercenaryLeaderScreen(PlayerEntity player, LeaderEntity merc, int price, int dialogueCount, boolean isFirstInteraction) {
-        super(new StringTextComponent("Merc Leader"));
+    public MercenaryLeaderScreen(Player player, LeaderEntity merc, int price) {
+        super();
         this.player = player;
         this.merc = merc;
         this.dialogueCount = dialogueCount;
@@ -60,45 +46,12 @@ public class MercenaryLeaderScreen extends Screen {
 
         this.hireButton = new Button(xStart, yStart, buttonWidth, 20, new StringTextComponent(text), (p_214318_1_) -> {
             if (this.hireButton.active) {
-                NetworkInit.INSTANCE.sendToServer(new BuyNewMercPacket());
+                new BuyNewMercPacket().sendToServer();
                 Minecraft.getInstance().setScreen(null);
             }
         });
         hireButton.active = this.price != Integer.MAX_VALUE;
         this.addButton(hireButton);
-
-        if (this.dialogueCount > 0){
-            this.addButton(new Button(xStart, yStart + 30, buttonWidth, 20, new StringTextComponent("Tell Me About Yourself"), (p_214318_1_) -> {
-                this.onDialogueButton();
-            }));
-        }
-    }
-
-    private void onDialogueButton(){
-        if (dialogueIndexes.isEmpty()){
-            for (int I=0;I<this.dialogueCount;I++){
-                dialogueIndexes.add(I);
-            }
-            Collections.shuffle(dialogueIndexes);
-        }
-
-        String dialogueType = this.isFirstInteraction ? "firstLeader" : "leader";
-        int indexI = merc.getRandom().nextInt(dialogueIndexes.size());
-        int index = dialogueIndexes.get(indexI);
-        dialogueIndexes.remove(indexI);
-        TranslationTextComponent fullText = new TranslationTextComponent("mercenaries.dialogue." + dialogueType + "_" + index);
-        String[] words = fullText.getString().split(" ");
-        StringBuilder line = new StringBuilder();
-        this.dialogue.clear();
-        for (String word : words){
-            String lastLine = line.toString();
-            line.append(" ").append(word);
-            if (this.font.width(line.toString()) > (imageWidth - 20)){
-                this.dialogue.add(new StringTextComponent(lastLine));
-                line = new StringBuilder(word);
-            }
-        }
-        this.dialogue.add(new StringTextComponent(line.toString()));
     }
 
     @Override
@@ -110,12 +63,6 @@ public class MercenaryLeaderScreen extends Screen {
         super.render(matrixStack, p_230430_2_, p_230430_3_, p_230430_4_);
         this.xMouse = (float)p_230430_2_;
         this.yMouse = (float)p_230430_3_;
-
-        int y = 0;
-        for (TextComponent text : this.dialogue){
-            this.write(matrixStack, text, i + 10, j + 90 + y);
-            y += 12;
-        }
     }
 
     private void write(MatrixStack matrixStack, TextComponent text, int x, int y){

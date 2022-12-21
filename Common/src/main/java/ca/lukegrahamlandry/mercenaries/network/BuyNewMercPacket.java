@@ -1,79 +1,76 @@
 package ca.lukegrahamlandry.mercenaries.network;
 
-import ca.lukegrahamlandry.mercenaries.MercConfig;
-import ca.lukegrahamlandry.mercenaries.SaveMercData;
+import ca.lukegrahamlandry.lib.network.ServerSideHandler;
+import ca.lukegrahamlandry.mercenaries.MercRegistry;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
-import ca.lukegrahamlandry.mercenaries.init.EntityInit;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.core.Registry;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
-import java.util.function.Supplier;
+import java.util.function.Predicate;
 
-// client -> server
-public class BuyNewMercPacket {
-    public BuyNewMercPacket() {
+public class BuyNewMercPacket implements ServerSideHandler {
+    @Override
+    public void handle(ServerPlayer player) {
+        int price = MercenariesMod.CONFIG.get().caclualteCurrentPrice(player);
+        if (payIfPossible(player.getInventory(), price, BuyNewMercPacket::isPayment)){
+            MercenaryEntity merc = MercRegistry.MERCENARY.get().create(player.level);
+            merc.setOwner(player);
+            merc.setPos(player.getX(), player.getY(), player.getZ());
+            merc.data.server.village = player.blockPosition();
+            MercenariesMod.MERC_LIST.get().addMerc(player, merc);
+            player.level.addFreshEntity(merc);
+
+            // TODO: translatable
+            player.displayClientMessage(Component.literal("Hired new mercenary!"), true);
+        } else {
+            player.displayClientMessage(Component.literal("You could not afford to hire a new mercenary"), true);
+        }
     }
 
-    public BuyNewMercPacket(PacketBuffer buf) {
-        this();
+    public static boolean isPayment(ItemStack stack){
+        return Registry.ITEM.getKey(stack.getItem()).equals(MercenariesMod.CONFIG.get().hirePaymentItem);
     }
 
-    public static void toBytes(BuyNewMercPacket msg, PacketBuffer buf) {
+    /**
+     * @param inventory the player's inventory to remove payment items from
+     * @param amount the number of items to pay
+     * @param valid a predicate that returns true for valid payment item stacks
+     * @return true if the player successfully paid
+     */
+    public static boolean payIfPossible(Inventory inventory, int amount, Predicate<ItemStack> valid){
+        // check if they can afford
+        int cashHeld = 0;
+        for (int i=0;i<inventory.getContainerSize();i++){
+            ItemStack stack = inventory.getItem(i);
+            if (valid.test(stack)) cashHeld += stack.getCount();
+        }
 
-    }
+        if (cashHeld < amount) return false;
+        
+        // pay
+        for (int i=0;i<inventory.getContainerSize();i++){
+            ItemStack stack = inventory.getItem(i);
+            if (valid.test(stack)){
+                if (stack.getCount() > amount){
+                    stack.shrink(amount);
+                    inventory.setItem(i, stack);
+                    amount = 0;
+                } else {
+                    amount -= stack.getCount();
+                    inventory.setItem(i, ItemStack.EMPTY);
+                }
 
-    public static void handle(BuyNewMercPacket msg, Supplier<NetworkEvent.Context> context) {
-        context.get().enqueueWork(() -> {
-            ServerPlayerEntity player = context.get().getSender();
-
-            // check if they can afford
-            int cashHeld = 0;
-            for (int i=0;i<player.inventory.getContainerSize();i++){
-                ItemStack stack = player.inventory.getItem(i);
-                if (stack.getItem() == MercConfig.buyMercItem()){
-                    cashHeld += stack.getCount();
+                if (amount <= 0){
+                    // consumed enough money
+                    break;
                 }
             }
-
-            int price = MercConfig.caclualteCurrentPrice(player);
-            if (cashHeld >= price){
-                // pay
-                for (int i=0;i<player.inventory.getContainerSize();i++){
-                    ItemStack stack = player.inventory.getItem(i);
-                    if (stack.getItem() == MercConfig.buyMercItem()){
-                        if (stack.getCount() > price){
-                            stack.shrink(price);
-                            player.inventory.setItem(i, stack);
-                            price = 0;
-                        } else {
-                            price -= stack.getCount();
-                            player.inventory.setItem(i, ItemStack.EMPTY);
-                        }
-
-                        if (price <= 0){
-                            // consumed enough money
-                            break;
-                        }
-                    }
-                }
-
-                // create merc
-                MercenaryEntity merc = EntityInit.MERCENARY.get().create(player.level);
-                merc.setOwner(player);
-                merc.setPos(player.getX(), player.getY(), player.getZ());
-                merc.villageLocation = player.blockPosition();
-                SaveMercData.get().addMerc(player, merc);
-                player.level.addFreshEntity(merc);
-
-                // alert
-                player.displayClientMessage(new StringTextComponent("Hired new mercenary!"), true);
-            } else {
-                player.displayClientMessage(new StringTextComponent("You could not afford to hire a new mercenary"), true);
-            }
-        });
-        context.get().setPacketHandled(true);
+        }
+        
+        return true;
     }
 }

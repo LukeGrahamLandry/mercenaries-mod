@@ -1,82 +1,34 @@
 package ca.lukegrahamlandry.mercenaries.network;
 
-import ca.lukegrahamlandry.mercenaries.MercConfig;
-import ca.lukegrahamlandry.mercenaries.SaveMercData;
+import ca.lukegrahamlandry.lib.network.ServerSideHandler;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
-import ca.lukegrahamlandry.mercenaries.init.EntityInit;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 
-import java.util.function.Supplier;
-
-// client -> server
-public class RehireMercPacket {
+public class RehireMercPacket implements ServerSideHandler {
     int id;
     public RehireMercPacket(int id) {
         this.id = id;
     }
 
-    public RehireMercPacket(PacketBuffer buf) {
-        this(buf.readInt());
-    }
+    @Override
+    public void handle(ServerPlayer player) {
+        Entity entity = player.level.getEntity(this.id);
+        if (entity instanceof MercenaryEntity) {
+            MercenaryEntity merc = (MercenaryEntity) entity;
 
-    public static void toBytes(RehireMercPacket msg, PacketBuffer buf) {
-        buf.writeInt(msg.id);
-    }
+            int price = MercenariesMod.CONFIG.get().rehirePrice;
+            if (BuyNewMercPacket.payIfPossible(player.getInventory(), price, BuyNewMercPacket::isPayment)){
+                merc.setOwner(player);
+                MercenariesMod.MERC_LIST.get().addMerc(player, merc);
 
-    public static void handle(RehireMercPacket msg, Supplier<NetworkEvent.Context> context) {
-        ServerPlayerEntity player = context.get().getSender();
-        context.get().enqueueWork(() -> {
-            Entity entity = player.level.getEntity(msg.id);
-            if (entity instanceof MercenaryEntity) {
-                MercenaryEntity merc = (MercenaryEntity) entity;
-
-                // check if they can afford
-                int cashHeld = 0;
-                for (int i=0;i<player.inventory.getContainerSize();i++){
-                    ItemStack stack = player.inventory.getItem(i);
-                    if (stack.getItem() == MercConfig.buyMercItem()){
-                        cashHeld += stack.getCount();
-                    }
-                }
-
-                int price = MercConfig.rehirePrice.get();
-                if (cashHeld >= price){
-                    // pay
-                    for (int i=0;i<player.inventory.getContainerSize();i++){
-                        ItemStack stack = player.inventory.getItem(i);
-                        if (stack.getItem() == MercConfig.buyMercItem()){
-                            if (stack.getCount() > price){
-                                stack.shrink(price);
-                                player.inventory.setItem(i, stack);
-                                price = 0;
-                            } else {
-                                price -= stack.getCount();
-                                player.inventory.setItem(i, ItemStack.EMPTY);
-                            }
-
-                            if (price <= 0){
-                                // consumed enough money
-                                break;
-                            }
-                        }
-                    }
-
-                    merc.setOwner(player);
-                    SaveMercData.get().addMerc(player, merc);
-                    // alert
-                    player.displayClientMessage(new StringTextComponent("Rehired mercenary!"), true);
-                } else {
-                    player.displayClientMessage(new StringTextComponent("You could not afford to rehire the mercenary"), true);
-                }
+                // TODO: translatable
+                player.displayClientMessage(Component.literal("Rehired mercenary!"), true);
+            } else {
+                player.displayClientMessage(Component.literal("You could not afford to rehire the mercenary"), true);
             }
-        });
-        context.get().setPacketHandled(true);
-
+        }
     }
 }
