@@ -1,0 +1,10 @@
+{
+  "loader": "forge",
+  "mc_versions": ["1.19.2", "1.19.1", "1.19"],
+  "releaseType": "release",
+  "github": {
+    "owner": "LukeGrahamLandry",
+    "repo": "mercenaries",
+    "branch": "1.19.2"
+  }
+}
