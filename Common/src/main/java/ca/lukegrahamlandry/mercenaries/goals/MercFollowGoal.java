@@ -1,6 +1,5 @@
 package ca.lukegrahamlandry.mercenaries.goals;
 
-import ca.lukegrahamlandry.mercenaries.MercConfig;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.LeavesBlock;

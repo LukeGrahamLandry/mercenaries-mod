@@ -1,15 +1,10 @@
 package ca.lukegrahamlandry.mercenaries.client.render;
 
 import ca.lukegrahamlandry.mercenaries.client.model.MercMountModel;
-import ca.lukegrahamlandry.mercenaries.entity.MercMountEntity;
-import com.google.common.collect.Maps;
-import net.minecraft.client.renderer.entity.AbstractHorseRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Util;
-
-import java.util.Map;
 
 public class MercMountRenderer extends MobRenderer<MercMountEntity, MercMountModel> {
     private static final ResourceLocation TEXTURE = new ResourceLocation("textures/entity/horse/horse_white.png");

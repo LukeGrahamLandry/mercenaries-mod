@@ -1,7 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.events;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
-import ca.lukegrahamlandry.mercenaries.SaveMercData;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -19,11 +18,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.server.FMLServerStartedEvent;
 import net.minecraftforge.fml.network.PacketDistributor;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-@Mod.EventBusSubscriber(modid = MercenariesMain.MOD_ID)
+@Mod.EventBusSubscriber(modid = MercenariesMod.MOD_ID)
 public class MiscEventHandler {
     public static MinecraftServer server;
     @SubscribeEvent

@@ -1,8 +1,7 @@
 package ca.lukegrahamlandry.mercenaries.client.gui;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.LeaderEntity;
-import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.network.BuyNewMercPacket;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.Minecraft;
@@ -20,7 +19,7 @@ import java.util.List;
 
 
 public class MercenaryLeaderScreen extends Screen {
-    private static final ResourceLocation TEXTURE = new ResourceLocation(MercenariesMain.MOD_ID, "textures/container/blank.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation(MercenariesMod.MOD_ID, "textures/container/blank.png");
 
     private final LeaderEntity merc;
     private final int dialogueCount;

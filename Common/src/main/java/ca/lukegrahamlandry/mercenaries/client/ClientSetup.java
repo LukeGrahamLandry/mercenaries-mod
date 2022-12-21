@@ -1,6 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.client;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.client.render.LeaderRenderer;
 import ca.lukegrahamlandry.mercenaries.client.render.MercMountRenderer;
 import ca.lukegrahamlandry.mercenaries.client.render.MercenaryRenderer;
@@ -9,13 +9,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
-import ca.lukegrahamlandry.mercenaries.init.EntityInit;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import org.lwjgl.glfw.GLFW;
 
 
-@Mod.EventBusSubscriber(modid = MercenariesMain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = MercenariesMod.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientSetup {
     public static final KeyBinding STOP = new KeyBinding("key.merc_stop", GLFW.GLFW_KEY_U, "key.categories.mercenaries");
     public static final KeyBinding ATTACK = new KeyBinding("key.merc_attack", GLFW.GLFW_KEY_T, "key.categories.mercenaries");

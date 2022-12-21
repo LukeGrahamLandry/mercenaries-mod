@@ -1,6 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.client.gui;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.Tessellator;
@@ -15,7 +15,7 @@ public class Drawable {
     int h;
 
     public Drawable(String texturePath, int width, int height){
-        this(new ResourceLocation(MercenariesMain.MOD_ID, texturePath), width, height);
+        this(new ResourceLocation(MercenariesMod.MOD_ID, texturePath), width, height);
     }
 
     public Drawable(ResourceLocation textureIn, int width, int height){

@@ -1,119 +1,58 @@
 package ca.lukegrahamlandry.mercenaries.entity;
 
-import ca.lukegrahamlandry.mercenaries.MercConfig;
-import ca.lukegrahamlandry.mercenaries.SaveMercData;
+import ca.lukegrahamlandry.lib.base.json.JsonHelper;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.client.MercTextureList;
 import ca.lukegrahamlandry.mercenaries.client.gui.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.goals.MercFollowGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
 import ca.lukegrahamlandry.mercenaries.goals.MercShieldGoal;
-import ca.lukegrahamlandry.mercenaries.init.EntityInit;
-import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
-import ca.lukegrahamlandry.mercenaries.integration.FakePlayerThatRedirects;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercRehireScreenPacket;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.*;
-import net.minecraft.entity.ai.attributes.AttributeModifierMap;
-import net.minecraft.entity.ai.attributes.Attributes;
-import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
-import net.minecraft.entity.ai.goal.RandomWalkingGoal;
-import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.monster.CreeperEntity;
-import net.minecraft.entity.monster.IMob;
-import net.minecraft.entity.monster.MonsterEntity;
-import net.minecraft.entity.passive.horse.AbstractHorseEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.entity.projectile.AbstractArrowEntity;
-import net.minecraft.entity.projectile.ProjectileHelper;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.*;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.network.datasync.DataParameter;
-import net.minecraft.network.datasync.DataSerializers;
-import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.util.*;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.fml.network.PacketDistributor;
+import ca.lukegrahamlandry.mercenaries.wrapped.MercEntityData;
+import net.minecraft.core.Registry;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 
-public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob {
-    public static final DataParameter<Integer> TEXTURE_TYPE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
-    public static final DataParameter<Integer> FOOD = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
-    public static final DataParameter<Integer> MONEY = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
+public class MercenaryEntity extends Mob implements IRangedAttackMob {
+    MercEntityData data = new MercEntityData();
 
-    public static final DataParameter<Integer> ATTACK_STANCE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
-    public static final DataParameter<Integer> MOVE_STANCE = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.INT);
-
-    public static final DataParameter<Optional<UUID>> OWNER = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.OPTIONAL_UUID);
-    public static final DataParameter<Optional<BlockPos>> CAMP = EntityDataManager.defineId(MercenaryEntity.class, DataSerializers.OPTIONAL_BLOCK_POS);
-    public BlockPos villageLocation = BlockPos.ZERO;
-    public RegistryKey<World> campDimension = World.OVERWORLD;
-
-    // > 0 when cant use, < 0 when using
-    public int shieldCoolDown = 0;
-
-    int foodTimer = 0;
-    int moneyTimer = 0;
-
-
-    // >0 when can't use
-    // <0 while using
-    int sharedArtifactCooldown = 0;
-    CooldownTracker cooldowns = new CooldownTracker();
-
-    private AttackType attackType = AttackType.NONE;
-    public Inventory inventory;
-    public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, World p_i48576_2_) {
+    public SimpleContainer inventory = new SimpleContainer(24);
+    public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, Level p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
-        this.inventory = new Inventory(24);
         if (!this.level.isClientSide()) {
-            this.entityData.set(TEXTURE_TYPE, MercTextureList.getRandom());
-            this.entityData.set(MONEY, 20);
-            this.entityData.set(FOOD, 20);
-            this.entityData.set(ATTACK_STANCE, 0);
-            this.entityData.set(MOVE_STANCE, 0);
-
-            if (!this.hasCustomName() && !MercConfig.names.get().isEmpty()){
-                String myName = MercConfig.names.get().get(this.getRandom().nextInt(MercConfig.names.get().size()));
-                this.setCustomName(new TranslationTextComponent(myName));
+            if (!this.hasCustomName() && !MercenariesMod.CONFIG.get().names.isEmpty()){
+                String myName = MercenariesMod.CONFIG.get().names.get(this.getRandom().nextInt(MercenariesMod.CONFIG.get().names.size()));
+                this.setCustomName(Component.translatable(myName));
             }
         }
         this.setPersistenceRequired();
     }
 
-    @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(TEXTURE_TYPE, 0);
-        this.entityData.define(MONEY, 20);
-        this.entityData.define(FOOD, 20);
-        this.entityData.define(ATTACK_STANCE, 0);
-        this.entityData.define(MOVE_STANCE, 0);
-        this.entityData.define(OWNER, Optional.empty());
-        this.entityData.define(CAMP, Optional.empty());
-    }
-
-    public static AttributeModifierMap.MutableAttribute makeAttributes() {
-        return MonsterEntity.createMonsterAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)0.33F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D).add(ForgeMod.REACH_DISTANCE.get(), 4D);
+    public static AttributeSupplier.Builder makeAttributes() {
+        return Mob.createMobAttributes().add(Attributes.FOLLOW_RANGE, 32.0D).add(Attributes.MOVEMENT_SPEED, (double)0.33F).add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.ARMOR, 0.0D);
     }
 
     public double getReachDist(){
-        return this.getAttributeValue(ForgeMod.REACH_DISTANCE.get());
+        return 4; //this.getAttributeValue(ForgeMod.REACH_DISTANCE.get());
     }
 
     @Override
@@ -140,16 +79,11 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                 return MercenaryEntity.this.isIdleMode() && super.canUse() && !MercenaryEntity.this.hasFindableTarget();
             }
         });
-         /*
-         if (MercConfig.artifactsInstalled()){
-             this.goalSelector.addGoal(1, new UseArtifactGoal(this));
-         }
-         */
     }
 
     private boolean canTarget(LivingEntity target) {
-        if (!(target instanceof IMob)) return false;
-        if (target instanceof CreeperEntity && this.getAttackType() == AttackType.MELEE) return false;
+        if (!(target instanceof Enemy)) return false;
+        if (target instanceof Enemy && this.getAttackType() == AttackType.MELEE) return false;
 
         if (this.isAttackStace()) {
             return !this.isStayMode() || this.distanceToSqr(target) < this.getReachDistSq();
@@ -158,124 +92,40 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return false;
     }
 
+    private int moneyValue(ItemStack stack){
+        return MercenariesMod.CONFIG.get().itemMoneyValue.getOrDefault(Registry.ITEM.getKey(stack.getItem()), 0);
+    }
+
+    private int foodValue(ItemStack stack){
+        return stack.getItem().isEdible() ? stack.getItem().getFoodProperties().getNutrition() : 0;
+    }
+
+    private void sendOwnerMessage(Component msg){
+        if (this.getOwner() == null) return;
+        this.getOwner().displayClientMessage(msg, true);
+    }
+
     @Override
     public void tick() {
         super.tick();
         this.updateSwingTime();
 
         if (!this.level.isClientSide()){
-            this.cooldowns.tick();
-            this.sharedArtifactCooldown -= Math.signum(this.sharedArtifactCooldown);
-            this.shieldCoolDown -= Math.signum(this.shieldCoolDown);
+            this.data.server.shieldCoolDown -= Math.signum(this.data.server.shieldCoolDown);
 
-            this.moneyTimer++;
-            if (this.moneyTimer > MercConfig.getMoneyDecayRate()){
-                this.entityData.set(MONEY, this.getMoney() - 1);
-
-                // consume from inventory
-                int needed = 20 - this.getMoney();
-                for (int i=0;i<(this.inventory.getContainerSize() - 4);i++){
-                    ItemStack stack = this.inventory.getItem(i);
-                    int value = MercConfig.getMoneyValue(stack.getItem());
-                    if (value > 0 && value <= needed){
-                        this.entityData.set(MONEY, this.getMoney() + value);
-                        stack.shrink(1);
-                        break;
-                    }
-                }
-
-                this.moneyTimer -= MercConfig.getMoneyDecayRate(); // set to 0 but might have overshot
-
-                if (this.getMoney() <= 8 && this.alertLevel < 1) {
-                    if (this.getOwner() != null){
-                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries wants to be paid"), true);
-                        this.alertLevel = 1;
-                    }
-                }
-
-                if (this.getMoney() <= 4 && this.alertLevel < 2) {
-                    if (this.getOwner() != null){
-                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries urgently needs to be paid!"), true);
-                        this.alertLevel = 2;
-                    }
-                }
-
-                if (this.getMoney() <= 0){
-                    this.leaveOwner();
-                }
+            this.data.server.foodTimer++;
+            if (this.data.server.foodTimer++ > MercenariesMod.CONFIG.get().foodDecayRate){
+                if (this.data.synced.food.consume(this.inventory, this::foodValue, this::sendOwnerMessage)) this.leaveOwner();
+                this.data.server.foodTimer -= MercenariesMod.CONFIG.get().foodDecayRate;
             }
 
-            this.foodTimer++;
-            if (this.foodTimer > MercConfig.getFoodDecayRate()){
-                this.entityData.set(FOOD, this.getFood() - 1);
-
-                // consume from inventory
-                int needed = 20 - this.getFood();
-                for (int i=0;i<(this.inventory.getContainerSize() - 4);i++){
-                    ItemStack stack = this.inventory.getItem(i);
-                    int value = stack.getItem().isEdible() ? stack.getItem().getFoodProperties().getNutrition() : 0;
-                    if (value > 0 && value <= needed){
-                        this.entityData.set(FOOD, this.getFood() + value);
-                        this.eat(this.level, stack); // calls stack.shrink and addEatEffects
-                        break;
-                    }
-                }
-
-                this.foodTimer -= MercConfig.getFoodDecayRate(); // set to 0 but might have overshot
-
-                if (this.getFood() <= 8 && this.alertLevel < 1) {
-                    if (this.getOwner() != null){
-                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries wants food"), true);
-                        this.alertLevel = 1;
-                    }
-                }
-
-                if (this.getFood() <= 4 && this.alertLevel < 2) {
-                    if (this.getOwner() != null){
-                        this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries urgently needs food!"), true);
-                        this.alertLevel = 2;
-                    }
-                }
-
-                if (this.getFood() <= 0){
-                    this.leaveOwner();
-                }
-            }
-
-            if (this.getOwner() != null && MercConfig.createHorseToRide.get()){
-                boolean isRiding = this.getVehicle() != null;
-                boolean mountablesCompat = this.getOwner().getVehicle() != null && this.getOwner().getVehicle().getType().getRegistryName() != null && "mountables".equals(this.getOwner().getVehicle().getType().getRegistryName().getNamespace());
-                boolean shouldRide = this.getOwner().getVehicle() instanceof AbstractHorseEntity || mountablesCompat;
-
-
-                if (shouldRide && !isRiding && MercConfig.createHorseToRide.get()){
-                    if (horseTimer < 0){
-                        MercMountEntity horse = new MercMountEntity(EntityInit.MOUNT.get(), this.level);
-                        horse.setPos(this.getX(), this.getY(), this.getZ());
-                        this.startRiding(horse);
-                        this.level.addFreshEntity(horse);
-                        horseTimer = 15;
-                    } else {
-                        horseTimer--;
-                    }
-
-
-                } else if (!shouldRide && isRiding){
-                    Entity horse = this.getVehicle();
-                    if (horse instanceof MercMountEntity){
-                        horseTimer = 0;
-                        this.stopRiding();
-                        horse.remove();
-                    }
-                }
+            this.data.server.moneyTimer++;
+            if (this.data.server.moneyTimer++ > MercenariesMod.CONFIG.get().moneyDecayRate){
+                if (this.data.synced.money.consume(this.inventory, this::moneyValue, this::sendOwnerMessage)) this.leaveOwner();
+                this.data.server.moneyTimer -= MercenariesMod.CONFIG.get().moneyDecayRate;
             }
         }
     }
-    int horseTimer = 0;  // this really shouldnt be nessisary but it breaks and spawns a bunch
-    // for a bit before actually riding one for some reason. hacky fix but makes it slightly better. not perfect
-    // the mount is somehow kicking it off and then removing itself ?
-
-    int alertLevel = 0;
 
     @Override
     public boolean hurt(DamageSource source, float p_70097_2_) {
@@ -290,16 +140,17 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
 
     // called when it runs out of food or money
     private void leaveOwner() {
-        if (this.villageLocation != BlockPos.ZERO){
-            this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries returned to the village at " + this.villageLocation), true);
+        if (this.data.server.village != null){
+            // TODO: translatable
+            this.sendOwnerMessage(Component.literal("One of your mercenaries returned to the village at " + this.data.server.village));
 
-            ServerWorld world = ((ServerWorld) this.level).getServer().getLevel(World.OVERWORLD);  // TODO: should not assume the village is in the overworld just incase, RS compat etc
-            if (world == null) world = (ServerWorld) this.level; // should never happen;
+            ServerLevel world = ((ServerLevel) this.level).getServer().getLevel(ServerLevel.OVERWORLD);  // TODO: should not assume the village is in the overworld just in case, RS compat etc
+            if (world == null) world = (ServerLevel) this.level; // should never happen;
 
             this.changeDimension(world);
-            this.teleportToWithTicket(this.villageLocation.getX(), this.villageLocation.getY(), this.villageLocation.getZ());
+            this.teleportToWithTicket(this.data.server.village.getX(), this.data.server.village.getY(), this.data.server.village.getZ());
         } else {
-            this.getOwner().displayClientMessage(new StringTextComponent("One of your mercenaries left"), true);
+            this.sendOwnerMessage(Component.literal("One of your mercenaries left"));
         }
 
         removeFromOwnerData();
@@ -371,15 +222,15 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     public int getFood() {
-        return this.entityData.get(FOOD);
+        return this.data.synced.food.value;
     }
     public int getMoney() {
-        return this.entityData.get(MONEY);
+        return this.data.synced.money.value;
     }
 
     public void jumpTime(long ticks) {
-        this.moneyTimer += ticks;
-        this.foodTimer += ticks;
+        this.data.server.moneyTimer += ticks;
+        this.data.server.foodTimer += ticks;
     }
 
     public void setAttackStance(int stance) {
@@ -417,25 +268,14 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return this.getMoveStance() == MovementStance.STAY;
     }
 
-    FakePlayerThatRedirects fakePlayer;
-    public PlayerEntity getFakePlayer() {
-        if (this.fakePlayer == null) this.fakePlayer = new FakePlayerThatRedirects(this);
-        return this.fakePlayer;
+    public void setOwner(Player player) {
+        if (player == null) this.data.server.owner = null;
+        else this.data.server.owner = player.getUUID();
     }
 
-    public void setOwner(PlayerEntity player) {
-        if (player == null) {
-            this.entityData.set(OWNER, Optional.empty());
-        }
-        else {
-            this.entityData.set(OWNER, Optional.of(player.getUUID()));
-        }
-    }
-
-    public PlayerEntity getOwner(){
-        Optional<UUID> id = this.entityData.get(OWNER);
-        if (id.isPresent()){
-            return this.level.getPlayerByUUID(id.get());
+    public Player getOwner(){
+        if (this.data.server.owner != null){
+            return this.level.getPlayerByUUID(this.data.server.owner);
         } else {
             return null;
         }
@@ -486,8 +326,9 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
     }
 
     @Override
-    public void addAdditionalSaveData(CompoundNBT tag) {
+    public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
+        tag.putString("mercdata", JsonHelper.get().toJson(this.data));
 
         ListNBT listnbt = new ListNBT();
         for(int i = 0; i < this.inventory.getContainerSize(); ++i) {
@@ -500,35 +341,13 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
             }
         }
         tag.put("Items", listnbt);
-
-        tag.putInt("texture", this.entityData.get(TEXTURE_TYPE));
-        tag.putInt("money", this.entityData.get(MONEY));
-        tag.putInt("food", this.entityData.get(FOOD));
-        tag.putInt("moneyTimer",  this.moneyTimer);
-        tag.putInt("foodTimer",  this.foodTimer);
-        tag.putInt("stance",  this.getAttackStance());
-        tag.putInt("movestance",  this.getMoveStance());
-        this.entityData.get(OWNER).ifPresent(owner -> {
-            tag.putUUID("owner", owner);
-        });
-        this.entityData.get(CAMP).ifPresent(camp -> {
-            tag.putInt("campx", camp.getX());
-            tag.putInt("campy", camp.getY());
-            tag.putInt("campz", camp.getZ());
-
-            tag.putString("campDimension", this.campDimension.location().toString());
-        });
-
-        tag.putInt("villagex", this.villageLocation.getX());
-        tag.putInt("villagey", this.villageLocation.getY());
-        tag.putInt("villagez", this.villageLocation.getZ());
-
-        tag.putInt("sharedArtifactCooldown",  this.sharedArtifactCooldown);
     }
 
     @Override
-    public void readAdditionalSaveData(CompoundNBT tag) {
+    public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+
+        if (tag.contains("mercdata")) this.data = JsonHelper.get().fromJson(tag.getString("mercdata"), MercEntityData.class);
 
         ListNBT listnbt = tag.getList("Items", 10);
 
@@ -539,26 +358,6 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
                 this.inventory.setItem(j, ItemStack.of(compoundnbt));
             }
         }
-
-        this.entityData.set(TEXTURE_TYPE, tag.getInt("texture"));
-        if (tag.contains("money")) this.entityData.set(MONEY, tag.getInt("money"));
-        if (tag.contains("food")) this.entityData.set(FOOD, tag.getInt("food"));
-        this.moneyTimer = tag.getInt("moneyTimer");
-        this.foodTimer = tag.getInt("foodTimer");
-        this.setAttackStance(tag.getInt("stance"));
-        this.setMoveStance(tag.getInt("movestance"));
-        if (tag.contains("owner")){
-            this.entityData.set(OWNER, Optional.of(tag.getUUID("owner")));
-        }
-
-        if (tag.contains("campx")){
-            this.entityData.set(CAMP, Optional.of(new BlockPos(tag.getInt("campx"), tag.getInt("campy"), tag.getInt("campz"))));
-            this.campDimension = RegistryKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(tag.getString("campDimension")));
-        }
-
-        this.villageLocation = new BlockPos(tag.getInt("villagex"), tag.getInt("villagey"), tag.getInt("villagez"));
-
-        this.sharedArtifactCooldown = tag.getInt("sharedArtifactCooldown");
     }
 
 
@@ -601,37 +400,15 @@ public class MercenaryEntity extends CreatureEntity implements IRangedAttackMob 
         return super.getMyRidingOffset() - 0.4;
     }
 
-    // artifact integration
-
-    public CooldownTracker getCooldowns() {
-        return this.cooldowns;
+    public enum MovementStance {
+        FOLLOW,
+        IDLE,
+        STAY
     }
 
-    public void onStartUseArtifact(){
-        this.sharedArtifactCooldown = -MercConfig.getTimeToUseArtifact();
-    }
-
-    public void onActuallyUseArtifact(){
-
-    }
-
-    public void onEndUseArtifact(){
-        this.sharedArtifactCooldown = MercConfig.getSharedArtifactCooldown();
-    }
-
-    public int getArtifactCooldown() {
-        return this.sharedArtifactCooldown;
-    }
-
-    public static class MovementStance {
-        public static int FOLLOW = 0;
-        public static int IDLE = 1;
-        public static int STAY = 2;
-    }
-
-    public static class AttackStance {
-        public static int ATTACK = 0;
-        public static int DEFEND = 1;
-        public static int PASSIVE = 2;
+    public enum AttackStance {
+        ATTACK,
+        DEFEND,
+        PASSIVE
     }
 }

@@ -1,6 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.integration;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import com.telepathicgrunt.repurposedstructures.world.structures.pieces.StructurePiecesBehavior;
 import net.minecraft.util.ResourceLocation;
 
@@ -26,16 +26,16 @@ public class RepurposedStructuresCompat {
 
         String rl = "repurposed_structures:village_";
 
-        add(new ResourceLocation(rl + "mountains"), MercenariesMain.MOD_ID + ":mountains");
-        add(new ResourceLocation(rl + "badlands"), MercenariesMain.MOD_ID + ":badlands");
-        add(new ResourceLocation(rl + "jungle"), MercenariesMain.MOD_ID + ":jungle");
-        add(new ResourceLocation(rl + "swamp"), MercenariesMain.MOD_ID + ":swamp");
+        add(new ResourceLocation(rl + "mountains"), MercenariesMod.MOD_ID + ":mountains");
+        add(new ResourceLocation(rl + "badlands"), MercenariesMod.MOD_ID + ":badlands");
+        add(new ResourceLocation(rl + "jungle"), MercenariesMod.MOD_ID + ":jungle");
+        add(new ResourceLocation(rl + "swamp"), MercenariesMod.MOD_ID + ":swamp");
 
         // i dont have unique buildings for these. just reuse them
-        add(new ResourceLocation(rl + "birch"), MercenariesMain.MOD_ID + ":plains");
-        add(new ResourceLocation(rl + "dark_forest"), MercenariesMain.MOD_ID + ":plains");
-        add(new ResourceLocation(rl + "giant_tree_taiga"), MercenariesMain.MOD_ID + ":taiga");
-        add(new ResourceLocation(rl + "oak"), MercenariesMain.MOD_ID + ":plains");
+        add(new ResourceLocation(rl + "birch"), MercenariesMod.MOD_ID + ":plains");
+        add(new ResourceLocation(rl + "dark_forest"), MercenariesMod.MOD_ID + ":plains");
+        add(new ResourceLocation(rl + "giant_tree_taiga"), MercenariesMod.MOD_ID + ":taiga");
+        add(new ResourceLocation(rl + "oak"), MercenariesMod.MOD_ID + ":plains");
 
     }
 }

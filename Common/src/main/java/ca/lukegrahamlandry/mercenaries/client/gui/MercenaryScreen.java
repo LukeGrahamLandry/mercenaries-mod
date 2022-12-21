@@ -1,8 +1,7 @@
 package ca.lukegrahamlandry.mercenaries.client.gui;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
-import ca.lukegrahamlandry.mercenaries.init.NetworkInit;
 import ca.lukegrahamlandry.mercenaries.network.SetMercCampPacket;
 import ca.lukegrahamlandry.mercenaries.network.SetMercStancePacket;
 import com.mojang.blaze3d.matrix.MatrixStack;
@@ -21,8 +20,8 @@ import net.minecraft.util.text.StringTextComponent;
 
 
 public class MercenaryScreen extends ContainerScreen<MerceneryContainer> {
-    private static final ResourceLocation GUARD_GUI_TEXTURES_NO_SWORD = new ResourceLocation(MercenariesMain.MOD_ID, "textures/container/inventory_old.png");
-    private static final ResourceLocation GUARD_GUI_TEXTURES = new ResourceLocation(MercenariesMain.MOD_ID, "textures/container/inventory.png");
+    private static final ResourceLocation GUARD_GUI_TEXTURES_NO_SWORD = new ResourceLocation(MercenariesMod.MOD_ID, "textures/container/inventory_old.png");
+    private static final ResourceLocation GUARD_GUI_TEXTURES = new ResourceLocation(MercenariesMod.MOD_ID, "textures/container/inventory.png");
     private final MercenaryEntity merc;
 
     private float xMouse;

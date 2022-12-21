@@ -1,6 +1,5 @@
 package ca.lukegrahamlandry.mercenaries.client.model;
 
-import ca.lukegrahamlandry.mercenaries.entity.MercMountEntity;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.IVertexBuilder;

@@ -1,6 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.client;
 
-import ca.lukegrahamlandry.mercenaries.MercenariesMain;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -30,17 +30,17 @@ public class MercTextureList {
         };
 
         for (String str : mercDefaults) {
-            validMercTextures.add(new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/merc/" + str + ".png"));
+            validMercTextures.add(new ResourceLocation(MercenariesMod.MOD_ID, "textures/entity/merc/" + str + ".png"));
         }
 
         for (String str : leaderDefaults) {
-            validLeaderTextures.add(new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/leader/" + str + ".png"));
+            validLeaderTextures.add(new ResourceLocation(MercenariesMod.MOD_ID, "textures/entity/leader/" + str + ".png"));
         }
 
         // load the extras added by resource packs. they must be named "texture_i" with i being sequential integers from 0 to 244
 
         for (int i=0;i<MAX_TEXTURES;i++){
-            ResourceLocation check = new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/merc/texture_" + i + ".png");
+            ResourceLocation check = new ResourceLocation(MercenariesMod.MOD_ID, "textures/entity/merc/texture_" + i + ".png");
             try {
                 Minecraft.getInstance().getResourceManager().getResource(check);
                 validMercTextures.add(check);
@@ -50,7 +50,7 @@ public class MercTextureList {
         }
 
         for (int i=0;i<MAX_TEXTURES;i++){
-            ResourceLocation check = new ResourceLocation(MercenariesMain.MOD_ID, "textures/entity/leader/texture_" + i + ".png");
+            ResourceLocation check = new ResourceLocation(MercenariesMod.MOD_ID, "textures/entity/leader/texture_" + i + ".png");
             try {
                 Minecraft.getInstance().getResourceManager().getResource(check);
                 validLeaderTextures.add(check);
