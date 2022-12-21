@@ -8,16 +8,17 @@ import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.item.SpawnEggItem;
+import net.minecraft.inventory.EquipmentSlotType;
+import net.minecraft.item.*;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.MobSpawnerTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
@@ -79,8 +80,7 @@ public class MercEggItem extends SpawnEggItem {
             return ActionResultType.CONSUME;
         }
     }
-
-
+    
     public EntityType<?> getType(@Nullable CompoundNBT p_208076_1_) {
         EntityType type = this.isLeader ? EntityInit.LEADER.get() : EntityInit.MERCENARY.get();
         if (p_208076_1_ != null && p_208076_1_.contains("EntityTag", 10)) {

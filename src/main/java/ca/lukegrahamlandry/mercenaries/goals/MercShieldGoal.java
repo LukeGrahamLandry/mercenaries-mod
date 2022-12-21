@@ -32,7 +32,7 @@ public class MercShieldGoal extends Goal {
             return Hand.OFF_HAND;
         }
 
-        merc.getItemInHand(Hand.MAIN_HAND);
+        held = merc.getItemInHand(Hand.MAIN_HAND);
         if (held.getItem().isShield(held, merc)){
             return Hand.MAIN_HAND;
         }
@@ -50,16 +50,18 @@ public class MercShieldGoal extends Goal {
         boolean available = !CrossbowItem.isCharged(merc.getItemInHand(Hand.MAIN_HAND)) && getShieldHand() != null && merc.shieldCoolDown == 0;
         if (!available) return false;
 
-        List<CreeperEntity> creepers = this.merc.level.getEntitiesOfClass(CreeperEntity.class, this.merc.getBoundingBox().inflate(4, 2, 4), (c) -> c.getSwellDir() > 0);
+        List<CreeperEntity> creepers = this.merc.level.getEntitiesOfClass(CreeperEntity.class, this.merc.getBoundingBox().inflate(4, 2, 4), (c) -> c.getSwelling(1) > 0);
         if (creepers.size() > 0){
             this.reason = Reason.CREEPER;
             this.merc.setTarget(creepers.get(0));
+            this.merc.shieldCoolDown = -2;
             return true;
         }
 
         LivingEntity target = this.merc.getTarget();
         if (target instanceof IRangedAttackMob && target.isAlive() && this.merc.getAttackType() == MercenaryEntity.AttackType.MELEE && this.merc.distanceToSqr(target) > this.merc.getReachDistSq()) {
             this.reason = Reason.SKELETON;
+            this.merc.shieldCoolDown = -2;
             return true;
         }
 
@@ -68,7 +70,7 @@ public class MercShieldGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return super.canContinueToUse() && !this.done && this.merc.shieldCoolDown < 0;
+        return !this.done && this.merc.shieldCoolDown < 0;
     }
 
 
@@ -95,6 +97,8 @@ public class MercShieldGoal extends Goal {
 
         if (this.merc.getTarget() == null || !this.merc.getTarget().isAlive() || !(this.merc.getTarget() instanceof CreeperEntity || this.merc.getTarget() instanceof IRangedAttackMob)) {
             this.done = true;
+            ModifiableAttributeInstance speedAtrr = this.merc.getAttribute(Attributes.MOVEMENT_SPEED);
+            speedAtrr.removeModifier(USE_SHIELD_PENALTY);
             return;
         }
 
