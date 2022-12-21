@@ -18,7 +18,7 @@ public class MercRegistry {
             EntityType.Builder.of(MercenaryEntity::new, MobCategory.CREATURE).sized(0.6F, 1.6F))
             .withAttributes(MercenaryEntity::makeAttributes)
             .withRenderer(() -> MercenaryRenderer::new)
-            .withSpawnEgg(0, 0xd68b00);  // TODO: it needs to bind you to the merc
+            .withSpawnEgg(0, 0xd68b00);
 
     public static Supplier<EntityType<LeaderEntity>> MERCENARY_LEADER = ENTITIES.register("leader",
             EntityType.Builder.of(LeaderEntity::new, MobCategory.CREATURE).sized(0.6F, 1.6F))

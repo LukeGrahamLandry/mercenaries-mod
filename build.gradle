@@ -35,6 +35,10 @@ subprojects {
         maven {
             url = "https://maven.lukegrahamlandry.ca"
         }
+
+        maven {
+            url "https://cursemaven.com"
+        }
     }
 }
 

@@ -2,10 +2,7 @@ package ca.lukegrahamlandry.mercenaries.client.gui;
 
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 public class Drawable {

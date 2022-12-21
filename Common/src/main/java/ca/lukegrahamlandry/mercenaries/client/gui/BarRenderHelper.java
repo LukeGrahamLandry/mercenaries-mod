@@ -1,12 +1,12 @@
 package ca.lukegrahamlandry.mercenaries.client.gui;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
-import static net.minecraft.client.gui.AbstractGui.GUI_ICONS_LOCATION;
+import static net.minecraft.client.gui.GuiComponent.GUI_ICONS_LOCATION;
 
 public class BarRenderHelper {
     private static Drawable EMERALD = new Drawable(new ResourceLocation("textures/item/emerald.png"), 10, 10);
@@ -15,7 +15,7 @@ public class BarRenderHelper {
         Minecraft.getInstance().getTextureManager().bind(res);
     }
 
-    public static void renderArmor(MatrixStack mStack, int left, int top, int level, IBlit draw) {
+    public static void renderArmor(PoseStack mStack, int left, int top, int level, IBlit draw) {
         bind(GUI_ICONS_LOCATION);
         RenderSystem.enableBlend();
 
@@ -42,11 +42,11 @@ public class BarRenderHelper {
     }
 
 
-    public static void renderHealth(int left, int top, MatrixStack mStack, int health, float healthMax, float absorb, IBlit draw) {
+    public static void renderHealth(int left, int top, PoseStack mStack, int health, float healthMax, float absorb, IBlit draw) {
         bind(GUI_ICONS_LOCATION);
         RenderSystem.enableBlend();
 
-        int healthRows = MathHelper.ceil((healthMax + absorb) / 2.0F / 10.0F);
+        int healthRows = Mth.ceil((healthMax + absorb) / 2.0F / 10.0F);
         int rowHeight = Math.max(10 - (healthRows - 2), 3);
 
         final int TOP =  0;
@@ -54,9 +54,9 @@ public class BarRenderHelper {
         int MARGIN = 16;
         float absorbRemaining = absorb;
 
-        for (int i = MathHelper.ceil((healthMax + absorb) / 2.0F) - 1; i >= 0; --i) {
+        for (int i = Mth.ceil((healthMax + absorb) / 2.0F) - 1; i >= 0; --i) {
             //int b0 = (highlight ? 1 : 0);
-            int row = MathHelper.ceil((float)(i + 1) / 10.0F) - 1;
+            int row = Mth.ceil((float)(i + 1) / 10.0F) - 1;
             int x = left + i % 10 * 8;
             int y = top - row * rowHeight;
 
@@ -88,7 +88,7 @@ public class BarRenderHelper {
         RenderSystem.disableBlend();
     }
 
-    public static void renderFood(int xStart, int y, MatrixStack mStack, int level, IBlit draw) {
+    public static void renderFood(int xStart, int y, PoseStack mStack, int level, IBlit draw) {
         bind(GUI_ICONS_LOCATION);
         RenderSystem.enableBlend();
         for (int i = 0; i < 10; ++i) {
@@ -122,6 +122,6 @@ public class BarRenderHelper {
     }
 
     public interface IBlit {
-        void blit(MatrixStack p_238474_1_, int p_238474_2_, int p_238474_3_, int p_238474_4_, int p_238474_5_, int p_238474_6_, int p_238474_7_);
+        void blit(PoseStack p_238474_1_, int p_238474_2_, int p_238474_3_, int p_238474_4_, int p_238474_5_, int p_238474_6_, int p_238474_7_);
     }
 }

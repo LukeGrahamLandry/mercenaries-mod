@@ -3,7 +3,6 @@ package ca.lukegrahamlandry.mercenaries.wrapped;
 import ca.lukegrahamlandry.lib.config.Comment;
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.Arrays;
@@ -40,7 +39,7 @@ public class MercSyncedConfig {
     public int rehirePrice = 15;
 
     @Comment("when a mercenary is killed, should its inventory drop")
-    boolean dropItemsOnDeath = true;
+    public boolean dropItemsOnDeath = true;
 
     @Comment("How many money units is each item worth when placed in a mercenary's inventory")
     public Map<ResourceLocation, Integer> itemMoneyValue = new HashMap<>();
@@ -60,7 +59,7 @@ public class MercSyncedConfig {
         @Comment("When there are targets, how many blocks should you walk away before your mercenaries start following")
         public int fighting = 16;
 
-        @Comment("how many blocks should you walk away before your mercenaries teleport to you")
+        @Comment("how many blocks should you walk away before your mercenaries teleport to you. (when idle or fighting)")
         public int teleport = 24;
     }
 

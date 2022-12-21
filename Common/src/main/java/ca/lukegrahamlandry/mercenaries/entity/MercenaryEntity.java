@@ -2,41 +2,66 @@ package ca.lukegrahamlandry.mercenaries.entity;
 
 import ca.lukegrahamlandry.lib.base.json.JsonHelper;
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
-import ca.lukegrahamlandry.mercenaries.client.MercTextureList;
 import ca.lukegrahamlandry.mercenaries.client.gui.MerceneryContainer;
-import ca.lukegrahamlandry.mercenaries.goals.MercFollowGoal;
-import ca.lukegrahamlandry.mercenaries.goals.MercMeleeAttackGoal;
-import ca.lukegrahamlandry.mercenaries.goals.MercRangeAttackGoal;
-import ca.lukegrahamlandry.mercenaries.goals.MercShieldGoal;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercRehireScreenPacket;
 import ca.lukegrahamlandry.mercenaries.network.OpenMercenaryInventoryPacket;
 import ca.lukegrahamlandry.mercenaries.wrapped.MercEntityData;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.behavior.StopAttackingIfTargetInvalid;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ProjectileWeaponItem;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
+import net.tslat.smartbrainlib.api.SmartBrainOwner;
+import net.tslat.smartbrainlib.api.core.BrainActivityGroup;
+import net.tslat.smartbrainlib.api.core.SmartBrainProvider;
+import net.tslat.smartbrainlib.api.core.behaviour.FirstApplicableBehaviour;
+import net.tslat.smartbrainlib.api.core.behaviour.OneRandomBehaviour;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableMeleeAttack;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.BowAttack;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.look.LookAtTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.Idle;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FloatToSurfaceOfFluid;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FollowEntity;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.move.MoveToWalkTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetRandomWalkTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetWalkTargetToAttackTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetPlayerLookTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetRandomLookTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.target.TargetOrRetaliate;
+import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
+import net.tslat.smartbrainlib.api.core.sensor.vanilla.HurtBySensor;
+import net.tslat.smartbrainlib.api.core.sensor.vanilla.NearbyLivingEntitySensor;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Predicate;
 
-public class MercenaryEntity extends Mob implements IRangedAttackMob {
+public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, SmartBrainOwner<MercenaryEntity> {
     public MercEntityData data = new MercEntityData();
 
     public SimpleContainer inventory = new SimpleContainer(24);
@@ -57,32 +82,6 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
 
     public double getReachDist(){
         return 4; //this.getAttributeValue(ForgeMod.REACH_DISTANCE.get());
-    }
-
-    @Override
-    protected void registerGoals() {
-        super.registerGoals();
-
-        this.goalSelector.addGoal(1, new SwimGoal(this));
-
-        this.goalSelector.addGoal(1, new MercShieldGoal(this));
-        this.goalSelector.addGoal(1, new MercMeleeAttackGoal(this, 1.0D, true));
-        this.goalSelector.addGoal(1, new MercRangeAttackGoal(this, 1.0D, 20, 10));
-        // melee attack goal should do this on its ownx
-        // this.goalSelector.addGoal(2, new MoveTowardsTargetGoal(this, 0.9D, 32.0F));
-         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, MobEntity.class, 5, false, false, this::canTarget));
-         this.goalSelector.addGoal(2, new MercFollowGoal(this));
-         this.goalSelector.addGoal(4, new RandomWalkingGoal(this, 0.8D, 100, false){
-            @Override
-            public boolean canContinueToUse() {
-                return MercenaryEntity.this.isIdleMode() && super.canContinueToUse() && !MercenaryEntity.this.hasFindableTarget();
-            }
-
-            @Override
-            public boolean canUse() {
-                return MercenaryEntity.this.isIdleMode() && super.canUse() && !MercenaryEntity.this.hasFindableTarget();
-            }
-        });
     }
 
     private boolean canTarget(LivingEntity target) {
@@ -113,21 +112,25 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
     public void tick() {
         super.tick();
         this.updateSwingTime();
+    }
 
-        if (!this.level.isClientSide()){
-            this.data.server.shieldCoolDown -= Math.signum(this.data.server.shieldCoolDown);
+    @Override
+    protected void customServerAiStep() {
+        super.customServerAiStep();
+        tickBrain(this);
 
-            this.data.server.foodTimer++;
-            if (this.data.server.foodTimer++ > MercenariesMod.CONFIG.get().foodDecayRate){
-                if (this.data.synced.food.consume(this.inventory, this::foodValue, this::sendOwnerMessage)) this.leaveOwner();
-                this.data.server.foodTimer -= MercenariesMod.CONFIG.get().foodDecayRate;
-            }
+        this.data.server.shieldCoolDown -= Math.signum(this.data.server.shieldCoolDown);
 
-            this.data.server.moneyTimer++;
-            if (this.data.server.moneyTimer++ > MercenariesMod.CONFIG.get().moneyDecayRate){
-                if (this.data.synced.money.consume(this.inventory, this::moneyValue, this::sendOwnerMessage)) this.leaveOwner();
-                this.data.server.moneyTimer -= MercenariesMod.CONFIG.get().moneyDecayRate;
-            }
+        this.data.server.foodTimer++;
+        if (this.data.server.foodTimer++ > MercenariesMod.CONFIG.get().foodDecayRate){
+            if (this.data.synced.food.consume(this.inventory, this::foodValue, this::sendOwnerMessage)) this.leaveOwner();
+            this.data.server.foodTimer -= MercenariesMod.CONFIG.get().foodDecayRate;
+        }
+
+        this.data.server.moneyTimer++;
+        if (this.data.server.moneyTimer++ > MercenariesMod.CONFIG.get().moneyDecayRate){
+            if (this.data.synced.money.consume(this.inventory, this::moneyValue, this::sendOwnerMessage)) this.leaveOwner();
+            this.data.server.moneyTimer -= MercenariesMod.CONFIG.get().moneyDecayRate;
         }
     }
 
@@ -167,7 +170,7 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
 
     private void removeFromOwnerData(){
         if (!this.level.isClientSide() && this.getOwner() != null) {
-            SaveMercData.get().removeMerc((ServerPlayerEntity) this.getOwner(), this);
+            MercenariesMod.MERC_LIST.get().removeMerc(this.getOwner(), this);
             this.setOwner(null);
         }
     }
@@ -176,7 +179,7 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (!this.level.isClientSide()) {
             if (this.getOwner() == null) {
-                NetworkInit.INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) player), new OpenMercRehireScreenPacket((ServerPlayerEntity) player, this));
+                new OpenMercRehireScreenPacket((ServerPlayer) player, this).sendToClient(player);
             } else if (this.getOwner().getUUID().equals(player.getUUID())) {
                 player.closeContainer();
                 ((ServerPlayer) player).nextContainerCounter();
@@ -191,29 +194,26 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
         return InteractionResult.SUCCESS;
     }
 
-
     @Override
-    public void performRangedAttack(LivingEntity p_82196_1_, float p_82196_2_) {
-        ItemStack ammoStack = this.getProjectile(this.getItemInHand(Hand.MAIN_HAND)); //ProjectileHelper.getWeaponHoldingHand(this, Items.BOW)));
+    public void performRangedAttack(LivingEntity target, float power) {
+        ItemStack ammoStack = this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND));
         if (ammoStack.isEmpty()) return;
         ammoStack.shrink(1);
 
-        AbstractArrowEntity abstractarrowentity = ProjectileHelper.getMobArrow(this, ammoStack, p_82196_2_);
-        if (this.getMainHandItem().getItem() instanceof net.minecraft.item.BowItem)
-            abstractarrowentity = ((net.minecraft.item.BowItem)this.getMainHandItem().getItem()).customArrow(abstractarrowentity);
-        double xDir = p_82196_1_.getX() - this.getX();
-        double yDir = p_82196_1_.getY(0.3333333333333333D) - abstractarrowentity.getY();
-        double zDir = p_82196_1_.getZ() - this.getZ();
-        double horizontalDistance = MathHelper.sqrt(xDir * xDir + zDir * zDir);
-        abstractarrowentity.shoot(xDir, yDir + horizontalDistance * (double)0.2F, zDir, 1.6F, (float)(14 - this.level.getDifficulty().getId() * 4));  // might want to change the inaccuracy here
-        this.playSound(SoundEvents.SKELETON_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-        this.level.addFreshEntity(abstractarrowentity);
+        AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammoStack, power);
+        double xDir = target.getX() - this.getX();
+        double yDir = target.getY(0.333D) - arrow.getY();
+        double zDir = target.getZ() - this.getZ();
+        double horizontalDistance = Mth.sqrt((float) (xDir * xDir + zDir * zDir));
+        arrow.shoot(xDir, yDir + horizontalDistance * 0.2F, zDir, 1.6F, 14 - this.level.getDifficulty().getId() * 4);  // might want to change the inaccuracy here
+        this.playSound(SoundEvents.ARROW_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+        this.level.addFreshEntity(arrow);
     }
 
     public ItemStack getProjectile(ItemStack bowStack) {
-        if (bowStack.getItem() instanceof ShootableItem) {
-            Predicate<ItemStack> predicate = ((ShootableItem)bowStack.getItem()).getSupportedHeldProjectiles();
-            ItemStack itemstack = ShootableItem.getHeldProjectile(this, predicate);
+        if (bowStack.getItem() instanceof ProjectileWeaponItem) {
+            Predicate<ItemStack> predicate = ((ProjectileWeaponItem)bowStack.getItem()).getSupportedHeldProjectiles();
+            ItemStack itemstack = ProjectileWeaponItem.getHeldProjectile(this, predicate);
             if (!itemstack.isEmpty()) return itemstack;
 
             for (int i=2;i<20;i++){
@@ -308,7 +308,7 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
         return Math.pow(getReachDist(), 2);
     }
 
-    public boolean isOwner(ServerPlayer player) {
+    public boolean isOwner(Player player) {
         return Objects.equals(player.getUUID(), this.data.server.owner);
     }
 
@@ -317,23 +317,19 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
         NONE,
         MELEE,
         RANGE,
-        SHIELD,
-        ARTIFACT
+        SHIELD
     }
 
     public AttackType getAttackType() {
-        if (this.shieldCoolDown < 0) return AttackType.SHIELD;
-        if (this.getArtifactCooldown() < 0) return AttackType.ARTIFACT;
+        if (this.data.server.shieldCoolDown < 0) return AttackType.SHIELD;
 
-        if (this.getMainHandItem().getItem().getAttributeModifiers(EquipmentSlotType.MAINHAND, this.getMainHandItem()).containsKey(Attributes.ATTACK_DAMAGE)){
-            this.attackType = AttackType.MELEE;
-        } else if (this.getMainHandItem().getItem() instanceof ShootableItem){
-            this.attackType = AttackType.RANGE;
-        } else {
-            this.attackType = AttackType.NONE;
+        if (this.getMainHandItem().getAttributeModifiers(EquipmentSlot.MAINHAND).containsKey(Attributes.ATTACK_DAMAGE)){
+            return AttackType.MELEE;
+        } else if (this.getMainHandItem().getItem() instanceof ProjectileWeaponItem){
+            return AttackType.RANGE;
         }
 
-        return this.attackType;
+        return AttackType.NONE;
     }
 
     @Override
@@ -371,15 +367,14 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
         }
     }
 
-
     @Override
     protected void dropCustomDeathLoot(DamageSource source, int looting, boolean wasPlayer) {
-        if (MercConfig.dropItemsOnDeath.get()){
-            for(EquipmentSlotType equipmentslottype : EquipmentSlotType.values()) {
-                ItemStack itemstack = this.getItemBySlot(equipmentslottype);
-                if (!itemstack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(itemstack)) {
-                    this.spawnAtLocation(itemstack);
-                    this.setItemSlot(equipmentslottype, ItemStack.EMPTY);
+        if (MercenariesMod.CONFIG.get().dropItemsOnDeath){
+            for(EquipmentSlot slot : EquipmentSlot.values()) {
+                ItemStack stack = this.getItemBySlot(slot);
+                if (!stack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(stack)) {
+                    this.spawnAtLocation(stack);
+                    this.setItemSlot(slot, ItemStack.EMPTY);
                 }
             }
 
@@ -392,23 +387,13 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
 
     @Override
     public void die(DamageSource source) {
-        System.out.println("die");
         super.die(source);
+        this.sendOwnerMessage(Component.literal("Your mercenary died."));
         removeFromOwnerData();
     }
 
     public ResourceLocation getTexture() {
-        return MercTextureList.getMercTexture(this.getEntityData().get(TEXTURE_TYPE));
-    }
-
-    @Override
-    public double getPassengersRidingOffset() {
-        return super.getPassengersRidingOffset();
-    }
-
-    @Override
-    public double getMyRidingOffset() {
-        return super.getMyRidingOffset() - 0.4;
+        return this.data.synced.texture;
     }
 
     public enum MovementStance {
@@ -421,5 +406,72 @@ public class MercenaryEntity extends Mob implements IRangedAttackMob {
         ATTACK,
         DEFEND,
         PASSIVE
+    }
+
+    // AI
+
+    @Override
+    protected Brain.Provider<?> brainProvider() {
+        return new SmartBrainProvider<>(this);
+    }
+
+    @Override
+    public List<ExtendedSensor<MercenaryEntity>> getSensors() {
+        return ObjectArrayList.of(
+                new NearbyLivingEntitySensor<>(),
+                new HurtBySensor<>()
+        );
+    }
+
+    @Override
+    public BrainActivityGroup<MercenaryEntity> getCoreTasks() {
+        return BrainActivityGroup.coreTasks(
+                new LookAtTarget<>(),
+                new FloatToSurfaceOfFluid<>(),
+                new MoveToWalkTarget<>());
+    }
+
+    @Override
+    public BrainActivityGroup<MercenaryEntity> getIdleTasks() {
+        return BrainActivityGroup.idleTasks(
+                new FirstApplicableBehaviour<MercenaryEntity>(
+                        new TargetOrRetaliate<>().attackablePredicate(this::canTarget),
+                        new FollowEntity<MercenaryEntity, Player>()
+                                .following(MercenaryEntity::getOwner)
+                                .stopFollowingWithin((s, t) -> (double) MercenariesMod.CONFIG.get().followDistance.idle)
+                                .teleportToTargetAfter((s, t) -> (double) MercenariesMod.CONFIG.get().followDistance.teleport)
+                        ,
+                        new FirstApplicableBehaviour<MercenaryEntity>(
+                                new SetPlayerLookTarget<>().predicate(this::isOwner),
+                                new SetPlayerLookTarget<>(),
+                                new SetRandomLookTarget<>()
+                        )
+                ),
+                new SetWalkTargetToAttackTarget<>(),
+                new OneRandomBehaviour<>(
+                        new SetRandomWalkTarget<>(),
+                        new Idle<>().runFor(entity -> entity.getRandom().nextInt(30, 60))));
+    }
+
+    @Override
+    public BrainActivityGroup<MercenaryEntity> getFightTasks() {
+        return BrainActivityGroup.fightTasks(
+                new StopAttackingIfTargetInvalid<>(target -> !target.isAlive() || target instanceof Player && ((Player)target).isCreative()),
+                new FirstApplicableBehaviour<MercenaryEntity>(
+                        new FollowEntity<MercenaryEntity, Player>()
+                                .following(MercenaryEntity::getOwner)
+                                .stopFollowingWithin((s, t) -> (double) MercenariesMod.CONFIG.get().followDistance.fighting)
+                                .teleportToTargetAfter((s, t) -> (double) MercenariesMod.CONFIG.get().followDistance.teleport)
+                                .whenStarting((self) -> self.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET))
+                        ,
+                        new FirstApplicableBehaviour<MercenaryEntity>(
+                                new AnimatableMeleeAttack<>(0),
+                                new SetWalkTargetToAttackTarget<>()
+                        ).startCondition((self) -> self.getAttackType() == AttackType.MELEE),
+                        new FirstApplicableBehaviour<MercenaryEntity>(
+                                new BowAttack<>(20).startCondition((self) -> !self.getProjectile(self.getItemInHand(InteractionHand.MAIN_HAND)).isEmpty())
+                        ).startCondition((self) -> self.getAttackType() == AttackType.RANGE)
+                )
+        );
     }
 }

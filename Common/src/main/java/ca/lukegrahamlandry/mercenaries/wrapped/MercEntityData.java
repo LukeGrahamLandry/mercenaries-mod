@@ -46,13 +46,14 @@ public class MercEntityData {
             static int total = 20;
             private String name;
             public int value = total;
-            int alert = 0;
 
             public InvResource(String name) {
                 this.name = name;
             }
 
             public boolean consume(SimpleContainer inventory, Function<ItemStack, Integer> points, Consumer<Component> message){
+                this.value--;
+
                 int needed = total - value;
                 for (int i=0; i<(inventory.getContainerSize() - 4); i++){
                     ItemStack stack = inventory.getItem(i);
@@ -63,14 +64,10 @@ public class MercEntityData {
                     }
                 }
 
-                if (this.value <= 8 && this.alert < 1) {
+                if (this.value <= 8) {
                     message.accept(Component.translatable(MercenariesMod.MOD_ID + ".alert.1." + this.name));
-                    this.alert = 1;
-                }
-
-                if (this.value <= 4 && this.alert < 2) {
+                } else if (this.value <= 4) {
                     message.accept(Component.translatable(MercenariesMod.MOD_ID + ".alert.2." + this.name));
-                    this.alert = 2;
                 }
 
                 return this.value <= 0;
