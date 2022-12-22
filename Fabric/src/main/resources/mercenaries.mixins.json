@@ -4,6 +4,9 @@
   "package": "ca.lukegrahamlandry.mercenaries.mixin",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
+    "JigsawManagerMixin",
+    "JigsawPatternMixin",
+    "JigsawStructureMixin"
   ],
   "client": [
   ],
