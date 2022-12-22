@@ -16,7 +16,6 @@ import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.StopAttackingIfTargetInvalid;
-import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
@@ -24,9 +23,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potions;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.tslat.smartbrainlib.api.SmartBrainOwner;
 import net.tslat.smartbrainlib.api.core.BrainActivityGroup;
@@ -35,6 +31,7 @@ import net.tslat.smartbrainlib.api.core.behaviour.FirstApplicableBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.OneRandomBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableMeleeAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.look.LookAtTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.HoldItem;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.Idle;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FloatToSurfaceOfFluid;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.MoveToWalkTarget;
@@ -47,13 +44,13 @@ import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.HurtBySensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.NearbyLivingEntitySensor;
 
-import java.util.HashMap;
 import java.util.List;
 
 public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<LeaderEntity> {
     public LeaderEntity(EntityType<LeaderEntity> entityType, Level level) {
         super(entityType, level);
         this.setPersistenceRequired();
+        this.xpReward = 20;
     }
 
     private boolean canTarget(LivingEntity target) {
@@ -83,17 +80,12 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
     }
 
     public ItemStack getSword(){
-        ItemStack sword = new ItemStack(Items.STONE_SWORD);
-        HashMap<Enchantment, Integer> enchants = new HashMap<>();
-        enchants.put(Enchantments.SHARPNESS, 5);
-        EnchantmentHelper.setEnchantments(enchants, sword);
-        return sword;
+        return new ItemStack(Items.WOODEN_SWORD);
     }
 
     @Override
     public boolean hurt(DamageSource source, float damage) {
-        if (source.getEntity() instanceof LivingEntity && source.getEntity().isAlive() && EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(source.getEntity())){
-            this.setTarget((LivingEntity) source.getEntity());
+        if (source.getEntity() instanceof LivingEntity){
             source.getEntity().hurt(DamageSource.thorns(this), Math.floorDiv((int) Math.floor(damage), 5) + 1);
         }
 
@@ -101,7 +93,7 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
     }
 
     public static AttributeSupplier.Builder makeAttributes() {
-        return IronGolem.createAttributes().add(Attributes.ATTACK_DAMAGE, 1.0D).add(Attributes.MOVEMENT_SPEED, 0.35D);
+        return Mob.createMobAttributes().add(Attributes.MAX_HEALTH, 60).add(Attributes.ARMOR, 10).add(Attributes.ATTACK_DAMAGE, 1).add(Attributes.MOVEMENT_SPEED, 0.35D);
     }
 
     @Override
@@ -117,7 +109,14 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
         return TEXTURE;
     }
 
-
+    // TODO: use loot table
+    @Override
+    protected void dropCustomDeathLoot(DamageSource damageSource, int i, boolean bl) {
+        super.dropCustomDeathLoot(damageSource, i, bl);
+        this.spawnAtLocation(new ItemStack(Items.DIAMOND, this.getRandom().nextInt(8)));
+        this.spawnAtLocation(new ItemStack(Items.EMERALD_BLOCK, this.getRandom().nextInt(16)));
+        this.spawnAtLocation(new ItemStack(Items.GOLD_INGOT, this.getRandom().nextInt(32)));
+    }
 
     @Override
     protected Brain.Provider<?> brainProvider() {
@@ -143,6 +142,7 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
     @Override
     public BrainActivityGroup<LeaderEntity> getIdleTasks() {
         return BrainActivityGroup.idleTasks(
+                new HoldItem<>().startCondition((self) -> !self.getMainHandItem().is(Items.POTION)),
                 new FirstApplicableBehaviour<LeaderEntity>(
                         new SetRetaliateTarget<>(),
                         new SetPlayerLookTarget<>(),
@@ -151,7 +151,7 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
                 new OneRandomBehaviour<LeaderEntity>(
                         new SetRandomWalkTarget<>(),
                         new Idle<>().runFor(entity -> entity.getRandom().nextInt(30, 60)),
-                        new DrinkPotionBehaviour<>(Potions.STRONG_REGENERATION).startCondition((self) -> self.getHealth() < self.getHealth() * 0.9)
+                        new DrinkPotionBehaviour<>(Potions.REGENERATION).startCondition((self) -> self.getHealth() < self.getHealth() * 0.9)
                 )
         );
     }
@@ -162,9 +162,16 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
                 new StopAttackingIfTargetInvalid<>(target -> !target.isAlive() || target instanceof Player && ((Player)target).isCreative()),
                 new FirstApplicableBehaviour<LeaderEntity>(
                         new DrinkPotionBehaviour<>(Potions.FIRE_RESISTANCE).startCondition(Entity::isOnFire),
-                        new AnimatableMeleeAttack<LeaderEntity>(0).whenStarting((self) -> self.setItemInHand(InteractionHand.MAIN_HAND, self.getSword())),
+                        new DrinkPotionBehaviour<>(Potions.STRONG_STRENGTH),
+                        new DrinkPotionBehaviour<>(Potions.STRONG_REGENERATION)
+                                .cooldownFor((self) -> 5*60*20)
+                                .startCondition((self) -> self.getHealth() < self.getHealth() * 0.25),
+                        new AnimatableMeleeAttack<LeaderEntity>(0),
                         new SetWalkTargetToAttackTarget<>()
-                )
+                ),
+                new HoldItem<LeaderEntity>()
+                        .withStack(LeaderEntity::getSword)
+                        .startCondition((self) -> !self.getMainHandItem().is(Items.POTION))
         );
     }
 }

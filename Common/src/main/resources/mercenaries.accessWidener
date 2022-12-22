@@ -1,0 +1,5 @@
+accessWidener	v1	named
+accessible method net/minecraft/world/entity/player/Player closeContainer ()V
+accessible method net/minecraft/server/level/ServerPlayer nextContainerCounter ()V
+accessible field net/minecraft/server/level/ServerPlayer containerCounter I
+accessible method net/minecraft/server/level/ServerPlayer initMenu (Lnet/minecraft/world/inventory/AbstractContainerMenu;)V

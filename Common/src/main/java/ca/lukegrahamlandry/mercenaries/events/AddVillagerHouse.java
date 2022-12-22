@@ -1,5 +1,6 @@
 package ca.lukegrahamlandry.mercenaries.events;
 
+import ca.lukegrahamlandry.lib.helper.PlatformHelper;
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.integration.RepurposedStructuresCompat;
 import com.google.common.collect.ImmutableList;
@@ -68,7 +69,7 @@ public class AddVillagerHouse {
         addBuildingToPool(templatePoolRegistry, new ResourceLocation("minecraft:village/savanna/terminators"), MercenariesMod.MOD_ID + ":end/savana", weight);
         addBuildingToPool(templatePoolRegistry, new ResourceLocation("minecraft:village/desert/terminators"), MercenariesMod.MOD_ID + ":end/desert", weight);
 
-        if (ModList.get().isLoaded("repurposed_structures")) {
+        if (PlatformHelper.isModLoaded("repurposed_structures")) {
             String rl = "repurposed_structures:village";
 
             addBuildingToPool(templatePoolRegistry, new ResourceLocation(rl + "/mountains/houses"), MercenariesMod.MOD_ID + ":mountains", weight);

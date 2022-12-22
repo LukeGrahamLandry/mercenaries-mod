@@ -23,7 +23,7 @@ import java.util.function.Function;
  * A potion item will automatically be created and placed in the entity's main hand (deleting whatever was there before).
  * It will not start if the entity already has all the potion's effects.
  * - If you want to keep the old item, you could use .whenStarting to save it and .whenStopping to put it back.
- * - You could have potionFinder select one from its inventory and use .whenStarting to remove it from the inventory.
+ * - You could have potionFinder select one from its inventory and use .whenStopping to remove it from the inventory.
  */
 public class DrinkPotionBehaviour<E extends LivingEntity> extends ExtendedBehaviour<E> {
     private Function<E, Potion> potionFinder;

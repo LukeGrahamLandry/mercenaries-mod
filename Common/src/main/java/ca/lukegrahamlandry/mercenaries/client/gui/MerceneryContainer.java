@@ -2,31 +2,25 @@ package ca.lukegrahamlandry.mercenaries.client.gui;
 
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.PlayerContainer;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
-import static net.minecraft.inventory.container.PlayerContainer.*;
+import static net.minecraft.world.inventory.InventoryMenu.*;
 
 public class MerceneryContainer extends AbstractContainerMenu {
     private final SimpleContainer mercInventory;
     private final MercenaryEntity merc;
 
     private static final ResourceLocation[] TEXTURE_EMPTY_SLOTS = new ResourceLocation[]{EMPTY_ARMOR_SLOT_BOOTS, EMPTY_ARMOR_SLOT_LEGGINGS, EMPTY_ARMOR_SLOT_CHESTPLATE, EMPTY_ARMOR_SLOT_HELMET};
-    private static final EquipmentSlotType[] SLOT_IDS = new EquipmentSlotType[]{EquipmentSlotType.HEAD, EquipmentSlotType.CHEST, EquipmentSlotType.LEGS, EquipmentSlotType.FEET};
+    private static final EquipmentSlot[] SLOT_IDS = new EquipmentSlot[]{ EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
     public MerceneryContainer(int id, Inventory playerInventory, SimpleContainer mercInventory, final MercenaryEntity merc) {
         // dont have to register the gui type because I'm sending the packet manually. just in case I want to send extra info later
@@ -36,7 +30,7 @@ public class MerceneryContainer extends AbstractContainerMenu {
         mercInventory.startOpen(playerInventory.player);
 
         for(int k = 0; k < 4; ++k) {
-            final EquipmentSlotType equipmentslottype = SLOT_IDS[k];
+            final EquipmentSlot slot = SLOT_IDS[k];
             this.addSlot(new Slot(mercInventory, 23 - k, 8, 8 + k * 18) {
                 public int getMaxStackSize() {
                     return 1;
@@ -45,21 +39,19 @@ public class MerceneryContainer extends AbstractContainerMenu {
                 @Override
                 public void set(ItemStack stack) {
                     super.set(stack);
-                    merc.setItemSlot(equipmentslottype, stack);
+                    merc.setItemSlot(slot, stack);
                 }
 
-                public boolean mayPlace(ItemStack p_75214_1_) {
-                    return p_75214_1_.canEquip(equipmentslottype, merc);
+                public boolean mayPlace(ItemStack stack) {
+                    return stack.getItem() instanceof ArmorItem && ((ArmorItem) stack.getItem()).getSlot() == slot;
                 }
 
-                public boolean mayPickup(PlayerEntity p_82869_1_) {
-                    ItemStack itemstack = this.getItem();
-                    return !itemstack.isEmpty() && !p_82869_1_.isCreative() && EnchantmentHelper.hasBindingCurse(itemstack) ? false : super.mayPickup(p_82869_1_);
+                public boolean mayPickup(Player player) {
+                    return (player.isCreative() || !EnchantmentHelper.hasBindingCurse(this.getItem())) && super.mayPickup(player);
                 }
 
-                @OnlyIn(Dist.CLIENT)
                 public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                    return Pair.of(PlayerContainer.BLOCK_ATLAS, TEXTURE_EMPTY_SLOTS[equipmentslottype.getIndex()]);
+                    return Pair.of(BLOCK_ATLAS, TEXTURE_EMPTY_SLOTS[slot.getIndex()]);
                 }
             });
         }
@@ -68,18 +60,17 @@ public class MerceneryContainer extends AbstractContainerMenu {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
-                merc.setItemSlot(EquipmentSlotType.OFFHAND, stack);
+                merc.setItemSlot(EquipmentSlot.OFFHAND, stack);
             }
 
             @Override
-            public boolean mayPickup(PlayerEntity p_82869_1_) {
-                ItemStack itemstack = this.getItem();
-                return (itemstack.isEmpty() || p_82869_1_.isCreative() || !EnchantmentHelper.hasBindingCurse(itemstack)) && super.mayPickup(p_82869_1_);
+            public boolean mayPickup(Player player) {
+                return (player.isCreative() || !EnchantmentHelper.hasBindingCurse(this.getItem())) && super.mayPickup(player);
             }
 
             @Override
             public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
-                return Pair.of(PlayerContainer.BLOCK_ATLAS, PlayerContainer.EMPTY_ARMOR_SLOT_SHIELD);
+                return Pair.of(BLOCK_ATLAS, EMPTY_ARMOR_SLOT_SHIELD);
             }
         });
 
@@ -87,7 +78,7 @@ public class MerceneryContainer extends AbstractContainerMenu {
             @Override
             public void set(ItemStack stack) {
                 super.set(stack);
-                merc.setItemSlot(EquipmentSlotType.MAINHAND, stack);
+                merc.setItemSlot(EquipmentSlot.MAINHAND, stack);
             }
         });
 
@@ -111,19 +102,19 @@ public class MerceneryContainer extends AbstractContainerMenu {
     }
 
     @Override
-    public boolean stillValid(PlayerEntity playerIn) {
+    public boolean stillValid(Player playerIn) {
         return this.merc.isAlive() && this.merc.distanceTo(playerIn) < 8.0F;
     }
 
     
     // seems to hang forever without this
     @Override
-    public ItemStack quickMoveStack(PlayerEntity playerIn, int index) {
-        ItemStack itemstack = ItemStack.EMPTY;
+    public ItemStack quickMoveStack(Player player, int index) {
+        ItemStack stack = ItemStack.EMPTY;
         Slot slot = this.slots.get(index);
         if (slot != null && slot.hasItem()) {
             ItemStack itemstack1 = slot.getItem();
-            itemstack = itemstack1.copy();
+            stack = itemstack1.copy();
             int i = this.mercInventory.getContainerSize();
             if (index < i) {
                 if (!this.moveItemStackTo(itemstack1, i, this.slots.size(), true)) {
@@ -162,12 +153,12 @@ public class MerceneryContainer extends AbstractContainerMenu {
             }
         }
 
-        return itemstack;
+        return stack;
     }
 
     @Override
-    public void removed(PlayerEntity playerIn) {
-        super.removed(playerIn);
-        this.mercInventory.stopOpen(playerIn);
+    public void removed(Player player) {
+        super.removed(player);
+        this.mercInventory.stopOpen(player);
     }
 }

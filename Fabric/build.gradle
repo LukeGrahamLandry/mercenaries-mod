@@ -8,7 +8,7 @@ architectury {
 }
 
 loom {
-    // accessWidenerPath = file("src/main/resources/-fabric.accessWidener")
+    accessWidenerPath = file("src/main/resources/mercenaries-fabric.accessWidener")
 }
 
 configurations {

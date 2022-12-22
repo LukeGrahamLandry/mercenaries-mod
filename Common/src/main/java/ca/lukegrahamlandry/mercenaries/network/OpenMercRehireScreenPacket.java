@@ -25,11 +25,10 @@ public class OpenMercRehireScreenPacket implements ClientSideHandler {
 
     @Override
     public void handle() {
-        Player player = Minecraft.getInstance().player;
-        Entity entity = player.level.getEntity(this.entityId);
+        Entity entity = Minecraft.getInstance().level.getEntity(this.entityId);
         if (entity instanceof MercenaryEntity) {
             MercenaryEntity merc = (MercenaryEntity) entity;
-            Minecraft.getInstance().setScreen(new RehireMercScreen(player, merc, this.price));
+            Minecraft.getInstance().setScreen(new RehireMercScreen(merc, this.price));
         } else {
             MercenariesMod.LOGGER.error("entity " + this.entityId + " is not a MercenaryEntity");
         }

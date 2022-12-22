@@ -1,5 +1,5 @@
 loom {
-    // accessWidenerPath = file("src/main/resources/.accessWidener")
+    accessWidenerPath = file("src/main/resources/mercenaries.accessWidener")
 }
 
 architectury {

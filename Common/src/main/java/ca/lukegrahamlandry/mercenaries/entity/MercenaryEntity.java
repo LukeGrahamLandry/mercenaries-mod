@@ -27,12 +27,15 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.StopAttackingIfTargetInvalid;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.MemoryStatus;
+import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
@@ -44,18 +47,19 @@ import net.tslat.smartbrainlib.api.core.behaviour.OneRandomBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableMeleeAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.BowAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.look.LookAtTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.HoldItem;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.Idle;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FloatToSurfaceOfFluid;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FollowEntity;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.MoveToWalkTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.move.StrafeTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetRandomWalkTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetWalkTargetToAttackTarget;
-import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetPlayerLookTarget;
-import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetRandomLookTarget;
-import net.tslat.smartbrainlib.api.core.behaviour.custom.target.TargetOrRetaliate;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.target.*;
 import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.HurtBySensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.NearbyLivingEntitySensor;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
@@ -82,17 +86,6 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
 
     public double getReachDist(){
         return 4; //this.getAttributeValue(ForgeMod.REACH_DISTANCE.get());
-    }
-
-    private boolean canTarget(LivingEntity target) {
-        if (!(target instanceof Enemy)) return false;
-        if (target instanceof Enemy && this.getAttackType() == AttackType.MELEE) return false;
-
-        if (this.isAttackStace()) {
-            return !this.isStayMode() || this.distanceToSqr(target) < this.getReachDistSq();
-        }
-
-        return false;
     }
 
     private int moneyValue(ItemStack stack){
@@ -134,17 +127,6 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         }
     }
 
-    @Override
-    public boolean hurt(DamageSource source, float p_70097_2_) {
-        if (source.getEntity() instanceof LivingEntity){
-            if (this.getOwner() == null || !this.getOwner().getUUID().equals(source.getEntity().getUUID())){
-                this.setTarget((LivingEntity) source.getEntity());
-            }
-        }
-
-        return super.hurt(source, p_70097_2_);
-    }
-
     // called when it runs out of food or money
     private void leaveOwner() {
         if (this.data.server.village != null){
@@ -178,14 +160,15 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (!this.level.isClientSide()) {
+            ServerPlayer p = (ServerPlayer) player;
             if (this.getOwner() == null) {
-                new OpenMercRehireScreenPacket((ServerPlayer) player, this).sendToClient(player);
-            } else if (this.getOwner().getUUID().equals(player.getUUID())) {
+                new OpenMercRehireScreenPacket(p, this).sendToClient(p);
+            } else if (this.isOwner(player)) {
                 player.closeContainer();
-                ((ServerPlayer) player).nextContainerCounter();
-                new OpenMercenaryInventoryPacket(((ServerPlayer)player).containerCounter, this.getId()).sendToClient((ServerPlayer) player);
-                player.containerMenu = new MerceneryContainer(((ServerPlayer) player).containerCounter, player.getInventory(), this.inventory, this);
-                player.containerMenu.addSlotListener(((ServerPlayer) player).containerListener);
+                p.nextContainerCounter();
+                new OpenMercenaryInventoryPacket(((ServerPlayer)player).containerCounter, this.getId()).sendToClient(p);
+                player.containerMenu = new MerceneryContainer(p.containerCounter, player.getInventory(), this.inventory, this);
+                p.initMenu(player.containerMenu);
             } else {
                 player.displayClientMessage(Component.literal("This is not your mercenary"), true);
             }
@@ -262,7 +245,7 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
     }
 
     private void syncData() {
-        // TODO
+        // TODO: packet
     }
 
     public MovementStance getMoveStance() {
@@ -306,30 +289,6 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
 
     public double getReachDistSq() {
         return Math.pow(getReachDist(), 2);
-    }
-
-    public boolean isOwner(Player player) {
-        return Objects.equals(player.getUUID(), this.data.server.owner);
-    }
-
-
-    public enum AttackType{
-        NONE,
-        MELEE,
-        RANGE,
-        SHIELD
-    }
-
-    public AttackType getAttackType() {
-        if (this.data.server.shieldCoolDown < 0) return AttackType.SHIELD;
-
-        if (this.getMainHandItem().getAttributeModifiers(EquipmentSlot.MAINHAND).containsKey(Attributes.ATTACK_DAMAGE)){
-            return AttackType.MELEE;
-        } else if (this.getMainHandItem().getItem() instanceof ProjectileWeaponItem){
-            return AttackType.RANGE;
-        }
-
-        return AttackType.NONE;
     }
 
     @Override
@@ -408,6 +367,42 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         PASSIVE
     }
 
+    @Override
+    public void setTarget(@Nullable LivingEntity livingEntity) {
+        super.setTarget(livingEntity);
+        if (livingEntity != null){
+            this.getBrain().setMemory(MemoryModuleType.ATTACK_TARGET, livingEntity);
+        } else {
+            this.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+        }
+
+    }
+
+    // AI Helpers
+
+    public boolean isOwner(Player player) {
+        return Objects.equals(player.getUUID(), this.data.server.owner);
+    }
+
+    private boolean canTarget(LivingEntity target) {
+        if (!(target instanceof Enemy)) return false;
+        if (target instanceof Creeper && !this.hasRanged()) return false;
+
+        if (this.isAttackStace()) {
+            return !this.isStayMode() || this.distanceToSqr(target) < this.getReachDistSq();
+        }
+
+        return false;
+    }
+
+    private boolean hasMelee(){
+        return this.getMainHandItem().getAttributeModifiers(EquipmentSlot.MAINHAND).containsKey(Attributes.ATTACK_DAMAGE);
+    }
+
+    private boolean hasRanged(){
+        return this.getMainHandItem().getItem() instanceof ProjectileWeaponItem && !this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND)).isEmpty();
+    }
+
     // AI
 
     @Override
@@ -428,14 +423,19 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         return BrainActivityGroup.coreTasks(
                 new LookAtTarget<>(),
                 new FloatToSurfaceOfFluid<>(),
-                new MoveToWalkTarget<>());
+                new MoveToWalkTarget<MercenaryEntity>().startCondition((self) -> !self.isStayMode()).stopIf(MercenaryEntity::isStayMode),
+                new StrafeTarget<MercenaryEntity>().startCondition(MercenaryEntity::hasRanged)
+        );
     }
 
     @Override
     public BrainActivityGroup<MercenaryEntity> getIdleTasks() {
         return BrainActivityGroup.idleTasks(
                 new FirstApplicableBehaviour<MercenaryEntity>(
-                        new TargetOrRetaliate<>().attackablePredicate(this::canTarget),
+                        new FirstApplicableBehaviour<MercenaryEntity>(
+                                new SetRetaliateTarget<>().attackablePredicate((e) -> !(e instanceof Player) || !this.isOwner((Player) e)),
+                                new SetAttackTarget<>().attackPredicate(this::canTarget)
+                        ),
                         new FollowEntity<MercenaryEntity, Player>()
                                 .following(MercenaryEntity::getOwner)
                                 .stopFollowingWithin((s, t) -> (double) MercenariesMod.CONFIG.get().followDistance.idle)
@@ -447,7 +447,6 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
                                 new SetRandomLookTarget<>()
                         )
                 ),
-                new SetWalkTargetToAttackTarget<>(),
                 new OneRandomBehaviour<>(
                         new SetRandomWalkTarget<>(),
                         new Idle<>().runFor(entity -> entity.getRandom().nextInt(30, 60))));
@@ -456,7 +455,7 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
     @Override
     public BrainActivityGroup<MercenaryEntity> getFightTasks() {
         return BrainActivityGroup.fightTasks(
-                new StopAttackingIfTargetInvalid<>(target -> !target.isAlive() || target instanceof Player && ((Player)target).isCreative()),
+                new StopAttackingIfTargetInvalid<>(target -> target instanceof Player && ((Player)target).isCreative()),
                 new FirstApplicableBehaviour<MercenaryEntity>(
                         new FollowEntity<MercenaryEntity, Player>()
                                 .following(MercenaryEntity::getOwner)
@@ -464,13 +463,11 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
                                 .teleportToTargetAfter((s, t) -> (double) MercenariesMod.CONFIG.get().followDistance.teleport)
                                 .whenStarting((self) -> self.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET))
                         ,
+                        new BowAttack<MercenaryEntity>(20).startCondition(MercenaryEntity::hasRanged),
                         new FirstApplicableBehaviour<MercenaryEntity>(
                                 new AnimatableMeleeAttack<>(0),
                                 new SetWalkTargetToAttackTarget<>()
-                        ).startCondition((self) -> self.getAttackType() == AttackType.MELEE),
-                        new FirstApplicableBehaviour<MercenaryEntity>(
-                                new BowAttack<>(20).startCondition((self) -> !self.getProjectile(self.getItemInHand(InteractionHand.MAIN_HAND)).isEmpty())
-                        ).startCondition((self) -> self.getAttackType() == AttackType.RANGE)
+                        ).startCondition(MercenaryEntity::hasMelee)
                 )
         );
     }

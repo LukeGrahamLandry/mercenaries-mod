@@ -1,6 +1,11 @@
 package ca.lukegrahamlandry.mercenaries.client.gui;
 
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL11;
@@ -46,7 +51,7 @@ public class Drawable {
         }
 
         public void bindTexture() {
-            Minecraft.getInstance().textureManager.bind(TEXTURE);
+            RenderSystem.setShaderTexture(0, TEXTURE);
         }
 
         public IDrawable getFullArea() {
@@ -83,17 +88,15 @@ public class Drawable {
                 float vi = v + dv * y1;
                 float vf = v + dv * y2;
 
-                Tessellator tesselator = Tessellator.getInstance();
+                Tesselator tesselator = Tesselator.getInstance();
                 BufferBuilder buffbuilder = tesselator.getBuilder();
-                buffbuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
+                buffbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
                 buffbuilder.vertex(xi, yi, 0D).uv(ui, vi).endVertex();
                 buffbuilder.vertex(xi, yf, 0D).uv(ui, vf).endVertex();
                 buffbuilder.vertex(xf, yf, 0D).uv(uf, vf).endVertex();
                 buffbuilder.vertex(xf, yi, 0D).uv(uf, vi).endVertex();
                 tesselator.end();
-
             }
-
         }
     }
 }

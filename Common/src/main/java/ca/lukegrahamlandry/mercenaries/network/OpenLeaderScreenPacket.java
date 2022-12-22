@@ -19,11 +19,10 @@ public class OpenLeaderScreenPacket implements ClientSideHandler {
 
     @Override
     public void handle() {
-        Player player = Minecraft.getInstance().player;
-        Entity entity = player.level.getEntity(this.entityId);
+        Entity entity = Minecraft.getInstance().level.getEntity(this.entityId);
         if (entity instanceof LeaderEntity) {
             LeaderEntity merc = (LeaderEntity) entity;
-            Minecraft.getInstance().setScreen(new MercenaryLeaderScreen(player, merc, this.price));
+            Minecraft.getInstance().setScreen(new MercenaryLeaderScreen(merc, this.price));
         } else {
             System.out.println("ERROR: entity " + this.entityId + " is not a LeaderEntity");
         }

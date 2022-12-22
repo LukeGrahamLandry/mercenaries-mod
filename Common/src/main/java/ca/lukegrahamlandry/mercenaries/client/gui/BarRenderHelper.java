@@ -12,7 +12,7 @@ public class BarRenderHelper {
     private static Drawable EMERALD = new Drawable(new ResourceLocation("textures/item/emerald.png"), 10, 10);
 
     private static void bind(ResourceLocation res){
-        Minecraft.getInstance().getTextureManager().bind(res);
+        RenderSystem.setShaderTexture(0, res);
     }
 
     public static void renderArmor(PoseStack mStack, int left, int top, int level, IBlit draw) {
