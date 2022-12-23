@@ -25,7 +25,7 @@ public class SetMercStancePacket implements ServerSideHandler {
             if (merc.isOwner(player)){
                 merc.setAttackStance(this.attackStance);
                 merc.setMoveStance(this.moveStace);
-                MercenariesMod.LOGGER.error("SetMercStancePacket: " + player.getScoreboardName() + " does not own " + this.entityId);
+                MercenariesMod.LOGGER.error("SetMercStancePacket: " + player.getScoreboardName() + " does not own " + merc.getUUID());
             }
         }
     }

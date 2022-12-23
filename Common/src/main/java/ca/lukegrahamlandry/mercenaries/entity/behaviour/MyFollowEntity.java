@@ -19,9 +19,13 @@ public class MyFollowEntity<E extends PathfinderMob, T extends Entity> extends F
 
     // if stopFollowingWithin is lower than startFollowingAt it will just immediately stop so probably not what you want
     // if you don't set a startFollowingAt it will default to using the stopFollowingWithin like normal
-    public FollowEntity<E, T> startFollowingAt(BiFunction<E, T, Double> distanceProvider) {
+    public MyFollowEntity<E, T> startFollowingAt(BiFunction<E, T, Double> distanceProvider) {
         this.startFollowDistMin = distanceProvider;
         return this;
+    }
+
+    public MyFollowEntity<E, T> startFollowingAt(double distance) {
+        return startFollowingAt((entity, target) -> distance);
     }
 
     // the normal one has the same start and stop distances.

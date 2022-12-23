@@ -2,6 +2,8 @@ package ca.lukegrahamlandry.mercenaries.entity;
 
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.entity.behaviour.DrinkPotionBehaviour;
+import ca.lukegrahamlandry.mercenaries.entity.behaviour.FollowTemptingPlayer;
+import ca.lukegrahamlandry.mercenaries.entity.behaviour.MyFollowEntity;
 import ca.lukegrahamlandry.mercenaries.network.OpenLeaderScreenPacket;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.ResourceLocation;
@@ -16,6 +18,8 @@ import net.minecraft.world.entity.ai.Brain;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.StopAttackingIfTargetInvalid;
+import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
@@ -23,6 +27,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
 import net.tslat.smartbrainlib.api.SmartBrainOwner;
 import net.tslat.smartbrainlib.api.core.BrainActivityGroup;
@@ -42,6 +47,7 @@ import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetRandomLookTar
 import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetRetaliateTarget;
 import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.HurtBySensor;
+import net.tslat.smartbrainlib.api.core.sensor.vanilla.ItemTemptingSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.NearbyLivingEntitySensor;
 
 import java.util.List;
@@ -67,16 +73,6 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
     public void tick() {
         super.tick();
         this.updateSwingTime();
-
-        if (this.inCombat){
-            if (this.getTarget() == null || !this.getTarget().isAlive()){
-                this.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 300, 2));
-                this.setTarget(null);
-                this.inCombat = false;
-            }
-        } else {
-            if (this.getTarget() != null) this.inCombat = true;
-        }
     }
 
     public ItemStack getSword(){
@@ -121,6 +117,7 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
     @Override
     protected void customServerAiStep() {
         tickBrain(this);
+        System.out.println(this.getBrain().getMemory(MemoryModuleType.TEMPTING_PLAYER));
     }
 
     @Override
@@ -132,7 +129,9 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
     public List<ExtendedSensor<LeaderEntity>> getSensors() {
         return ObjectArrayList.of(
                 new NearbyLivingEntitySensor<>(),
-                new HurtBySensor<>()
+                new HurtBySensor<>(),
+                new ItemTemptingSensor<LeaderEntity>()
+                        .setTemptingItems(Ingredient.of(Items.EMERALD_BLOCK, Items.EMERALD))
         );
     }
 
@@ -153,10 +152,13 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
                         new SetPlayerLookTarget<>(),
                         new SetRandomLookTarget<>()
                 ),
-                new OneRandomBehaviour<LeaderEntity>(
-                        new SetRandomWalkTarget<>(),
-                        new Idle<>().runFor(entity -> entity.getRandom().nextInt(30, 60)),
-                        new DrinkPotionBehaviour<>(Potions.REGENERATION).startCondition((self) -> self.getHealth() < self.getHealth() * 0.9)
+                new FirstApplicableBehaviour<>(
+                        new FollowTemptingPlayer<>(),
+                        new OneRandomBehaviour<LeaderEntity>(
+                                new SetRandomWalkTarget<>(),
+                                new Idle<>().runFor(entity -> entity.getRandom().nextInt(30, 60)),
+                                new DrinkPotionBehaviour<>(Potions.REGENERATION).startCondition((self) -> self.getHealth() < self.getMaxHealth() * 0.9)
+                        )
                 )
         );
     }
@@ -170,7 +172,7 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
                         new DrinkPotionBehaviour<>(Potions.STRONG_STRENGTH),
                         new DrinkPotionBehaviour<>(Potions.STRONG_REGENERATION)
                                 .cooldownFor((self) -> 5*60*20)
-                                .startCondition((self) -> self.getHealth() < self.getHealth() * 0.25),
+                                .startCondition((self) -> self.getHealth() < self.getMaxHealth() * 0.25),
                         new AnimatableMeleeAttack<LeaderEntity>(0),
                         new SetWalkTargetToAttackTarget<>()
                 ),

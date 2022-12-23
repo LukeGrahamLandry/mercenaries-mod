@@ -22,8 +22,8 @@ public class GlobalMercListData {
         MercenariesMod.MERC_LIST.setDirty();
     }
 
-    public void removeMerc(Player player, MercenaryEntity merc){
-        ArrayList<UUID> owned = mercs.getOrDefault(player.getUUID(), new ArrayList<>());
+    public void removeMerc(UUID player, MercenaryEntity merc){
+        ArrayList<UUID> owned = mercs.getOrDefault(player, new ArrayList<>());
         owned.remove(merc.getUUID());
         MercenariesMod.MERC_LIST.setDirty();
     }

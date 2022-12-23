@@ -30,25 +30,32 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.StopAttackingIfTargetInvalid;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.MemoryStatus;
+import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.FlintAndSteelItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.tslat.smartbrainlib.api.SmartBrainOwner;
 import net.tslat.smartbrainlib.api.core.BrainActivityGroup;
 import net.tslat.smartbrainlib.api.core.SmartBrainProvider;
 import net.tslat.smartbrainlib.api.core.behaviour.FirstApplicableBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.OneRandomBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableMeleeAttack;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableRangedAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.BowAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.look.LookAtTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.Idle;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.move.AvoidEntity;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FloatToSurfaceOfFluid;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.MoveToWalkTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.StrafeTarget;
@@ -57,6 +64,7 @@ import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetWalkTargetToAtt
 import net.tslat.smartbrainlib.api.core.behaviour.custom.target.*;
 import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.HurtBySensor;
+import net.tslat.smartbrainlib.api.core.sensor.vanilla.ItemTemptingSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.NearbyLivingEntitySensor;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,7 +75,7 @@ import java.util.function.Predicate;
 public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, SmartBrainOwner<MercenaryEntity> {
     public MercEntityData data = new MercEntityData();
 
-    public SimpleContainer inventory = new SimpleContainer(24);
+    private SimpleContainer inventory = new SimpleContainer(24);
     public MercenaryEntity(EntityType<MercenaryEntity> p_i48576_1_, Level p_i48576_2_) {
         super(p_i48576_1_, p_i48576_2_);
         if (!this.level.isClientSide()) {
@@ -114,14 +122,14 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
 
         this.data.server.foodTimer++;
         if (this.data.server.foodTimer++ > MercenariesMod.CONFIG.get().foodDecayRate){
-            if (this.data.synced.food.consume(this.inventory, this::foodValue, this::sendOwnerMessage)) this.leaveOwner();
+            if (this.data.synced.food.consume(this.getInventory(), this::foodValue, this::sendOwnerMessage)) this.leaveOwner();
             this.data.server.foodTimer -= MercenariesMod.CONFIG.get().foodDecayRate;
             this.syncData();
         }
 
         this.data.server.moneyTimer++;
         if (this.data.server.moneyTimer++ > MercenariesMod.CONFIG.get().moneyDecayRate){
-            if (this.data.synced.money.consume(this.inventory, this::moneyValue, this::sendOwnerMessage)) this.leaveOwner();
+            if (this.data.synced.money.consume(this.getInventory(), this::moneyValue, this::sendOwnerMessage)) this.leaveOwner();
             this.data.server.moneyTimer -= MercenariesMod.CONFIG.get().moneyDecayRate;
             this.syncData();
         }
@@ -151,8 +159,8 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
     }
 
     private void removeFromOwnerData(){
-        if (!this.level.isClientSide() && this.getOwner() != null) {
-            MercenariesMod.MERC_LIST.get().removeMerc(this.getOwner(), this);
+        if (!this.level.isClientSide() && this.hasOwner()) {
+            MercenariesMod.MERC_LIST.get().removeMerc(this.data.server.owner, this);
             this.setOwner(null);
         }
     }
@@ -161,13 +169,13 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (!this.level.isClientSide()) {
             ServerPlayer p = (ServerPlayer) player;
-            if (this.getOwner() == null) {
+            if (!this.hasOwner()) {
                 new OpenMercRehireScreenPacket(p, this).sendToClient(p);
             } else if (this.isOwner(player)) {
                 player.closeContainer();
                 p.nextContainerCounter();
                 new OpenMercenaryInventoryPacket(((ServerPlayer)player).containerCounter, this.getId()).sendToClient(p);
-                player.containerMenu = new MerceneryContainer(p.containerCounter, player.getInventory(), this.inventory, this);
+                player.containerMenu = new MerceneryContainer(p.containerCounter, player.getInventory(), this.getInventory(), this);
                 p.initMenu(player.containerMenu);
             } else {
                 player.displayClientMessage(Component.literal("This is not your mercenary"), true);
@@ -179,18 +187,34 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
 
     @Override
     public void performRangedAttack(LivingEntity target, float power) {
-        ItemStack ammoStack = this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND));
-        if (ammoStack.isEmpty()) return;
-        ammoStack.shrink(1);
+        if (this.hasRanged()){
+            ItemStack ammoStack = this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND));
+            if (ammoStack.isEmpty()) return;
+            ammoStack.shrink(1);
 
-        AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammoStack, power);
-        double xDir = target.getX() - this.getX();
-        double yDir = target.getY(0.333D) - arrow.getY();
-        double zDir = target.getZ() - this.getZ();
-        double horizontalDistance = Mth.sqrt((float) (xDir * xDir + zDir * zDir));
-        arrow.shoot(xDir, yDir + horizontalDistance * 0.2F, zDir, 1.6F, 14 - this.level.getDifficulty().getId() * 4);  // might want to change the inaccuracy here
-        this.playSound(SoundEvents.ARROW_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-        this.level.addFreshEntity(arrow);
+            AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammoStack, power);
+            double xDir = target.getX() - this.getX();
+            double yDir = target.getY(0.333D) - arrow.getY();
+            double zDir = target.getZ() - this.getZ();
+            double horizontalDistance = Mth.sqrt((float) (xDir * xDir + zDir * zDir));
+            arrow.shoot(xDir, yDir + horizontalDistance * 0.2F, zDir, 1.6F, 14 - this.level.getDifficulty().getId() * 4);  // might want to change the inaccuracy here
+            this.playSound(SoundEvents.ARROW_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+            this.level.addFreshEntity(arrow);
+        } else if (this.hasTnt()) {
+            this.getOffhandItem().shrink(1);
+            this.getMainHandItem().setDamageValue(this.getMainHandItem().getDamageValue() + 1);
+
+            PrimedTnt tnt = EntityType.TNT.create(this.level);
+            tnt.setPos(this.getBoundingBox().getCenter());
+            double xDir = target.getX() - this.getX();
+            double yDir = target.getY(0.333D) - tnt.getY();
+            double zDir = target.getZ() - this.getZ();
+            double horizontalDistance = Mth.sqrt((float) (xDir * xDir + zDir * zDir));
+
+            Vec3 vec3 = (new Vec3(xDir, yDir + horizontalDistance * 0.2F, zDir)).normalize();
+            tnt.setDeltaMovement(vec3);
+            this.level.addFreshEntity(tnt);
+        }
     }
 
     public ItemStack getProjectile(ItemStack bowStack) {
@@ -200,7 +224,7 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
             if (!itemstack.isEmpty()) return itemstack;
 
             for (int i=2;i<20;i++){
-                ItemStack checkAmmo = this.inventory.getItem(i);
+                ItemStack checkAmmo = this.getInventory().getItem(i);
                 if (predicate.test(checkAmmo)) return checkAmmo;
             }
         }
@@ -267,12 +291,17 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         else this.data.server.owner = player.getUUID();
     }
 
+    // doing a null check on this is not the same as hasOwner because the owner might be offline
     public Player getOwner(){
         if (this.data.server.owner != null){
             return this.level.getPlayerByUUID(this.data.server.owner);
         } else {
             return null;
         }
+    }
+
+    public boolean hasOwner(){
+        return this.data.server.owner != null;
     }
 
 
@@ -295,8 +324,8 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         tag.putString("mercdata", JsonHelper.get().toJson(this.data));
 
         ListTag listnbt = new ListTag();
-        for(int i = 0; i < this.inventory.getContainerSize(); ++i) {
-            ItemStack itemstack = this.inventory.getItem(i);
+        for(int i = 0; i < this.getInventory().getContainerSize(); ++i) {
+            ItemStack itemstack = this.getInventory().getItem(i);
             if (!itemstack.isEmpty()) {
                 CompoundTag compoundnbt = new CompoundTag();
                 compoundnbt.putByte("Slot", (byte)i);
@@ -319,8 +348,8 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         for(int i = 0; i < listnbt.size(); ++i) {
             CompoundTag compoundnbt = listnbt.getCompound(i);
             int j = compoundnbt.getByte("Slot") & 255;
-            if (j >= 0 && j < this.inventory.getContainerSize()) {
-                this.inventory.setItem(j, ItemStack.of(compoundnbt));
+            if (j >= 0 && j < this.getInventory().getContainerSize()) {
+                this.getInventory().setItem(j, ItemStack.of(compoundnbt));
             }
         }
     }
@@ -337,9 +366,9 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
             }
 
             for (int i=2;i<20;i++){
-                this.spawnAtLocation(this.inventory.getItem(i));
+                this.spawnAtLocation(this.getInventory().getItem(i));
             }
-            this.inventory.clearContent();
+            this.getInventory().clearContent();
         }
     }
 
@@ -352,6 +381,10 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
 
     public ResourceLocation getTexture() {
         return this.data.synced.texture;
+    }
+
+    public SimpleContainer getInventory() {
+        return inventory;
     }
 
     public enum MovementStance {
@@ -384,7 +417,6 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
     }
 
     private boolean canTarget(LivingEntity target) {
-        System.out.println("check " + target);
         if (!(target instanceof Enemy)) return false;
         if (target instanceof Creeper && !this.hasRanged()) return false;
 
@@ -401,6 +433,10 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
 
     private boolean hasRanged(){
         return this.getMainHandItem().getItem() instanceof ProjectileWeaponItem && !this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND)).isEmpty();
+    }
+
+    private boolean hasTnt(){
+        return this.getMainHandItem().getItem() instanceof FlintAndSteelItem && this.getOffhandItem().is(Items.TNT);
     }
 
     // AI
@@ -425,10 +461,19 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
                 new FloatToSurfaceOfFluid<>(),
                 new MoveToWalkTarget<MercenaryEntity>()
                         .startCondition((self) -> self.data.synced.moveStance != MovementStance.STAY),
-                new StrafeTarget<MercenaryEntity>()
-                        .startCondition(MercenaryEntity::hasRanged),
-                new SetWalkTargetToAttackTarget<MercenaryEntity>()
-                        .startCondition(MercenaryEntity::hasMelee)
+                new FirstApplicableBehaviour<MercenaryEntity>(
+                        new StrafeTarget<MercenaryEntity>()
+                                .startCondition(MercenaryEntity::hasRanged),
+                        new SetWalkTargetToAttackTarget<MercenaryEntity>()
+                                .startCondition(MercenaryEntity::hasMelee),
+                        new AvoidEntity<MercenaryEntity>()
+                                .avoiding((entity) -> Objects.equals(entity, this.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null)))
+                                .startCondition((self) -> self.hasTnt() && self.getBrain().checkMemory(MemoryModuleType.ATTACK_TARGET, MemoryStatus.VALUE_PRESENT)),
+                        new MyFollowEntity<MercenaryEntity, LivingEntity>()
+                                .startFollowingAt((s, t) -> 10D)
+                                .following((self) -> self.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null))
+                                .startCondition((self) -> self.hasTnt() && self.getBrain().checkMemory(MemoryModuleType.ATTACK_TARGET, MemoryStatus.VALUE_PRESENT))
+                )
         );
     }
 
@@ -470,7 +515,10 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
                         new BowAttack<MercenaryEntity>(20)
                                 .startCondition(MercenaryEntity::hasRanged),
                         new AnimatableMeleeAttack<MercenaryEntity>(0)
-                                .startCondition(MercenaryEntity::hasMelee)
+                                .startCondition(MercenaryEntity::hasMelee),
+                        new AnimatableRangedAttack<MercenaryEntity>(0)
+                                .attackRadius(10)
+                                .startCondition(MercenaryEntity::hasTnt)
                 )
         );
     }

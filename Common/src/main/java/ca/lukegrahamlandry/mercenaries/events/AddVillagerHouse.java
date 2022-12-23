@@ -47,7 +47,6 @@ public class AddVillagerHouse {
 
     public static void addNewVillageBuilding(MinecraftServer server) {
         if (!MercenariesMod.CONFIG.get().generateLeaderHouses) return;
-        System.out.println("addNewVillageBuilding");
 
         // the mixins used to make the buildings happen once per village make this value irrelevant
         int weight = 99;

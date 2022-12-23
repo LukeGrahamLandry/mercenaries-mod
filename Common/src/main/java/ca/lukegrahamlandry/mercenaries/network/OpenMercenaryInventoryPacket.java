@@ -1,6 +1,7 @@
 package ca.lukegrahamlandry.mercenaries.network;
 
 import ca.lukegrahamlandry.lib.network.ClientSideHandler;
+import ca.lukegrahamlandry.mercenaries.MercenariesMod;
 import ca.lukegrahamlandry.mercenaries.client.gui.MercenaryScreen;
 import ca.lukegrahamlandry.mercenaries.client.gui.MerceneryContainer;
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity;
@@ -24,11 +25,11 @@ public class OpenMercenaryInventoryPacket implements ClientSideHandler {
             Entity entity = player.level.getEntity(this.entityId);
             if (entity instanceof MercenaryEntity) {
                 MercenaryEntity merc = (MercenaryEntity) entity;
-                MerceneryContainer container = new MerceneryContainer(this.containerId, player.getInventory(), merc.inventory, merc);
+                MerceneryContainer container = new MerceneryContainer(this.containerId, player.getInventory(), merc.getInventory(), merc);
                 player.containerMenu = container;
                 Minecraft.getInstance().setScreen(new MercenaryScreen(container, player.getInventory(), merc));
             } else {
-                System.out.println("ERROR: entity " + this.entityId + " is not a MercenaryEntity");
+                MercenariesMod.LOGGER.error("entity " + this.entityId + " is not a MercenaryEntity");
             }
         }
     }

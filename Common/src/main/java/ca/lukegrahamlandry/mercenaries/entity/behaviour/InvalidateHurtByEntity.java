@@ -16,6 +16,7 @@ import java.util.List;
 // Based on https://github.com/Tslat/SmartBrainLib/blob/1.19/Common/src/main/java/net/tslat/smartbrainlib/api/core/behaviour/custom/target/InvalidateAttackTarget.java
 // This file is distributed under the MPL 2.0
 
+// I feel like i shouldn't need this because HurtBySensor clears it but it doesn't seem to be working, idk
 public class InvalidateHurtByEntity<E extends Mob> extends ExtendedBehaviour<E> {
     private static final List<Pair<MemoryModuleType<?>, MemoryStatus>> MEMORY_REQUIREMENTS = ObjectArrayList.of(Pair.of(MemoryModuleType.HURT_BY_ENTITY, MemoryStatus.VALUE_PRESENT));
 

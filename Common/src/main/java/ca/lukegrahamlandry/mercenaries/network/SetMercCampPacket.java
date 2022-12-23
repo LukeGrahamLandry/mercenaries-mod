@@ -22,7 +22,7 @@ public class SetMercCampPacket implements ServerSideHandler {
                 merc.setCamp(merc.blockPosition());
                 merc.data.synced.campDimension = merc.level.dimension().location();
             } else {
-                MercenariesMod.LOGGER.error("SetMercCampPacket: " + player.getScoreboardName() + " does not own " + this.id);
+                MercenariesMod.LOGGER.error("SetMercCampPacket: " + player.getScoreboardName() + " does not own " + merc.getUUID());
             }
         }
     }

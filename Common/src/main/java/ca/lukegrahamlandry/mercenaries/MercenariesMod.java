@@ -1,5 +1,6 @@
 package ca.lukegrahamlandry.mercenaries;
 
+import ca.lukegrahamlandry.lib.base.json.JsonHelper;
 import ca.lukegrahamlandry.lib.config.ConfigWrapper;
 import ca.lukegrahamlandry.lib.data.DataWrapper;
 import ca.lukegrahamlandry.lib.data.impl.GlobalDataWrapper;

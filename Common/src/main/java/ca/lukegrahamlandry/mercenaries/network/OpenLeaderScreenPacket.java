@@ -24,7 +24,7 @@ public class OpenLeaderScreenPacket implements ClientSideHandler {
             LeaderEntity merc = (LeaderEntity) entity;
             Minecraft.getInstance().setScreen(new MercenaryLeaderScreen(merc, this.price));
         } else {
-            System.out.println("ERROR: entity " + this.entityId + " is not a LeaderEntity");
+            MercenariesMod.LOGGER.error("entity " + this.entityId + " is not a LeaderEntity");
         }
     }
 }
