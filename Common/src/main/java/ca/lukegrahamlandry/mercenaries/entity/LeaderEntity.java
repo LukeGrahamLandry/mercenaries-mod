@@ -119,6 +119,11 @@ public class LeaderEntity extends PathfinderMob implements SmartBrainOwner<Leade
     }
 
     @Override
+    protected void customServerAiStep() {
+        tickBrain(this);
+    }
+
+    @Override
     protected Brain.Provider<?> brainProvider() {
         return new SmartBrainProvider<>(this);
     }

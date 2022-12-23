@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 public class GlobalMercListData {
-    HashMap<UUID, ArrayList<UUID>> mercs;
+    HashMap<UUID, ArrayList<UUID>> mercs = new HashMap<>();
 
     public void addMerc(Player player, MercenaryEntity merc){
         ArrayList<UUID> owned = mercs.getOrDefault(player.getUUID(), new ArrayList<>());

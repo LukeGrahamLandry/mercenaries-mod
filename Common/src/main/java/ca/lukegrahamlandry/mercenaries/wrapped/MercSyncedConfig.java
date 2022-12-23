@@ -27,7 +27,7 @@ public class MercSyncedConfig {
     public double priceScaleAmount = 2;
 
     @Comment("should leader houses generate in villages?")
-    public boolean generateLeaderHouses;
+    public boolean generateLeaderHouses = true;
 
     @Comment("which item should be used to pay for new mercenaries")
     public ResourceLocation hirePaymentItem = new ResourceLocation("minecraft", "emerald");

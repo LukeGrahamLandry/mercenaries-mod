@@ -65,7 +65,7 @@ public class DrinkPotionBehaviour<E extends LivingEntity> extends ExtendedBehavi
 
         for (MobEffectInstance fromPotion : potion.getEffects()){
             MobEffectInstance current = self.getEffect(fromPotion.getEffect());
-            if (current != null && current.getAmplifier() < fromPotion.getAmplifier()) return true;
+            if (current == null || current.getAmplifier() < fromPotion.getAmplifier()) return true;
         }
         return false;
     }

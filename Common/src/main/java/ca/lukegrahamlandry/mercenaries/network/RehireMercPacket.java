@@ -20,7 +20,7 @@ public class RehireMercPacket implements ServerSideHandler {
             MercenaryEntity merc = (MercenaryEntity) entity;
 
             int price = MercenariesMod.CONFIG.get().rehirePrice;
-            if (BuyNewMercPacket.payIfPossible(player.getInventory(), price, BuyNewMercPacket::isPayment)){
+            if (BuyNewMercPacket.payIfPossible(player, price, BuyNewMercPacket::isPayment)){
                 merc.setOwner(player);
                 MercenariesMod.MERC_LIST.get().addMerc(player, merc);
 

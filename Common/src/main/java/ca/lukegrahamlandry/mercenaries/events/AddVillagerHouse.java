@@ -25,7 +25,6 @@ import java.util.function.Function;
 
 public class AddVillagerHouse {
     public static boolean hasDoneLeaderHouse = false; // used by mixins. just here so its present at runtime
-
     private static final ResourceKey<StructureProcessorList> EMPTY_PROCESSOR_LIST_KEY = ResourceKey.create(Registry.PROCESSOR_LIST_REGISTRY, new ResourceLocation("minecraft", "empty"));
 
     private static void addBuildingToPool(Registry<StructureTemplatePool> templatePoolRegistry, Registry<StructureProcessorList> processorListRegistry, ResourceLocation poolRL, String nbtPieceRL, int weight) {
@@ -35,7 +34,7 @@ public class AddVillagerHouse {
         if (pool == null) return;
 
         // LeaderJigsawPiece is checked by the mixins to make them happen once per village
-        SinglePoolElement piece = LeaderJigsawPiece.legacy(nbtPieceRL).apply(StructureTemplatePool.Projection.RIGID);
+        SinglePoolElement piece = LeaderJigsawPiece.legacy(nbtPieceRL, emptyProcessorList).apply(StructureTemplatePool.Projection.RIGID);
 
         for (int i = 0; i < weight; i++) {
             pool.templates.add(piece);
@@ -48,9 +47,10 @@ public class AddVillagerHouse {
 
     public static void addNewVillageBuilding(MinecraftServer server) {
         if (!MercenariesMod.CONFIG.get().generateLeaderHouses) return;
+        System.out.println("addNewVillageBuilding");
 
         // the mixins used to make the buildings happen once per village make this value irrelevant
-        int weight = 1;
+        int weight = 99;
 
         Registry<StructureTemplatePool> templatePoolRegistry = server.registryAccess().registry(Registry.TEMPLATE_POOL_REGISTRY).orElseThrow();
         Registry<StructureProcessorList> processorListRegistry = server.registryAccess().registry(Registry.PROCESSOR_LIST_REGISTRY).orElseThrow();
@@ -104,8 +104,8 @@ public class AddVillagerHouse {
             this(Either.right(structureTemplate), ProcessorLists.EMPTY, StructureTemplatePool.Projection.RIGID);
         }
 
-        public static Function<StructureTemplatePool.Projection, LegacySinglePoolElement> legacy(String string) {
-            return (projection) -> new LeaderJigsawPiece(Either.left(new ResourceLocation(string)), ProcessorLists.EMPTY, projection);
+        public static Function<StructureTemplatePool.Projection, LegacySinglePoolElement> legacy(String string, Holder<StructureProcessorList> holder) {
+            return (projection) -> new LeaderJigsawPiece(Either.left(new ResourceLocation(string)), holder, projection);
         }
     }
 }

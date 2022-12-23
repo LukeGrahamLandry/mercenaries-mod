@@ -8,6 +8,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.function.Predicate;
@@ -16,7 +17,7 @@ public class BuyNewMercPacket implements ServerSideHandler {
     @Override
     public void handle(ServerPlayer player) {
         int price = MercenariesMod.CONFIG.get().caclualteCurrentPrice(player);
-        if (payIfPossible(player.getInventory(), price, BuyNewMercPacket::isPayment)){
+        if (payIfPossible(player, price, BuyNewMercPacket::isPayment)){
             MercenaryEntity merc = MercRegistry.MERCENARY.get().create(player.level);
             merc.setOwner(player);
             merc.setPos(player.getX(), player.getY(), player.getZ());
@@ -36,12 +37,15 @@ public class BuyNewMercPacket implements ServerSideHandler {
     }
 
     /**
-     * @param inventory the player's inventory to remove payment items from
+     * @param player the player to take payment items from
      * @param amount the number of items to pay
      * @param valid a predicate that returns true for valid payment item stacks
      * @return true if the player successfully paid
      */
-    public static boolean payIfPossible(Inventory inventory, int amount, Predicate<ItemStack> valid){
+    public static boolean payIfPossible(Player player, int amount, Predicate<ItemStack> valid){
+        if (player.isCreative()) return true;
+
+        Inventory inventory = player.getInventory();
         // check if they can afford
         int cashHeld = 0;
         for (int i=0;i<inventory.getContainerSize();i++){
