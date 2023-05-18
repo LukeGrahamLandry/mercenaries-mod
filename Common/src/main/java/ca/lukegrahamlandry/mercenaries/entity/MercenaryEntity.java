@@ -365,6 +365,11 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         return inventory;
     }
 
+    public void setCampHere() {
+        this.setCamp(this.blockPosition());;
+        this.data.synced.campDimension = this.level.dimension().location();
+    }
+
     public enum MovementStance {
         FOLLOW,
         IDLE,
