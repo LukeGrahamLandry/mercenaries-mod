@@ -24,8 +24,7 @@ dependencies {
 
     modImplementation(group: 'ca.lukegrahamlandry.lib', name: 'WrapperLib-1.19-Forge', version: '1.1.0') { transitive false }
 
-    modImplementation("curse.maven:smartbrainlib-661293:4124615")
-    modCompileOnly("curse.maven:smartbrainlib-661293:4124615")
+    modImplementation("curse.maven:smartbrainlib-661293:4124615-sources-4124619")
 }
 
 processResources {

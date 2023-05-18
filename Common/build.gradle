@@ -11,6 +11,5 @@ dependencies {
 
     modImplementation group: 'ca.lukegrahamlandry.lib', name: 'WrapperLib-1.19-Common', version: '1.1.0'
 
-    modImplementation("curse.maven:smartbrainlib-661293:4124615")
-    modCompileOnly("curse.maven:smartbrainlib-661293:4124615")
+    modImplementation("curse.maven:smartbrainlib-661293:4124615-sources-4124619")
 }

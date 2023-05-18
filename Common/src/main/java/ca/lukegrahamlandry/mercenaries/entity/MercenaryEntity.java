@@ -30,41 +30,35 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.behavior.StopAttackingIfTargetInvalid;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
-import net.minecraft.world.entity.ai.memory.MemoryStatus;
-import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
-import net.minecraft.world.item.FlintAndSteelItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 import net.tslat.smartbrainlib.api.SmartBrainOwner;
 import net.tslat.smartbrainlib.api.core.BrainActivityGroup;
 import net.tslat.smartbrainlib.api.core.SmartBrainProvider;
 import net.tslat.smartbrainlib.api.core.behaviour.FirstApplicableBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.OneRandomBehaviour;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableMeleeAttack;
-import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.AnimatableRangedAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.attack.BowAttack;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.look.LookAtTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.misc.Idle;
-import net.tslat.smartbrainlib.api.core.behaviour.custom.move.AvoidEntity;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.FloatToSurfaceOfFluid;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.MoveToWalkTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.move.StrafeTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetRandomWalkTarget;
 import net.tslat.smartbrainlib.api.core.behaviour.custom.path.SetWalkTargetToAttackTarget;
-import net.tslat.smartbrainlib.api.core.behaviour.custom.target.*;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetPlayerLookTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.target.SetRetaliateTarget;
+import net.tslat.smartbrainlib.api.core.behaviour.custom.target.TargetOrRetaliate;
 import net.tslat.smartbrainlib.api.core.sensor.ExtendedSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.HurtBySensor;
-import net.tslat.smartbrainlib.api.core.sensor.vanilla.ItemTemptingSensor;
 import net.tslat.smartbrainlib.api.core.sensor.vanilla.NearbyLivingEntitySensor;
 import org.jetbrains.annotations.Nullable;
 
@@ -187,34 +181,18 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
 
     @Override
     public void performRangedAttack(LivingEntity target, float power) {
-        if (this.hasRanged()){
-            ItemStack ammoStack = this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND));
-            if (ammoStack.isEmpty()) return;
-            ammoStack.shrink(1);
+        ItemStack ammoStack = this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND));
+        if (ammoStack.isEmpty()) return;
+        ammoStack.shrink(1);
 
-            AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammoStack, power);
-            double xDir = target.getX() - this.getX();
-            double yDir = target.getY(0.333D) - arrow.getY();
-            double zDir = target.getZ() - this.getZ();
-            double horizontalDistance = Mth.sqrt((float) (xDir * xDir + zDir * zDir));
-            arrow.shoot(xDir, yDir + horizontalDistance * 0.2F, zDir, 1.6F, 14 - this.level.getDifficulty().getId() * 4);  // might want to change the inaccuracy here
-            this.playSound(SoundEvents.ARROW_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-            this.level.addFreshEntity(arrow);
-        } else if (this.hasTnt()) {
-            this.getOffhandItem().shrink(1);
-            this.getMainHandItem().setDamageValue(this.getMainHandItem().getDamageValue() + 1);
-
-            PrimedTnt tnt = EntityType.TNT.create(this.level);
-            tnt.setPos(this.getBoundingBox().getCenter());
-            double xDir = target.getX() - this.getX();
-            double yDir = target.getY(0.333D) - tnt.getY();
-            double zDir = target.getZ() - this.getZ();
-            double horizontalDistance = Mth.sqrt((float) (xDir * xDir + zDir * zDir));
-
-            Vec3 vec3 = (new Vec3(xDir, yDir + horizontalDistance * 0.2F, zDir)).normalize();
-            tnt.setDeltaMovement(vec3);
-            this.level.addFreshEntity(tnt);
-        }
+        AbstractArrow arrow = ProjectileUtil.getMobArrow(this, ammoStack, power);
+        double xDir = target.getX() - this.getX();
+        double yDir = target.getY(0.333D) - arrow.getY();
+        double zDir = target.getZ() - this.getZ();
+        double horizontalDistance = Mth.sqrt((float) (xDir * xDir + zDir * zDir));
+        arrow.shoot(xDir, yDir + horizontalDistance * 0.2F, zDir, 1.6F, 14 - this.level.getDifficulty().getId() * 4);  // might want to change the inaccuracy here
+        this.playSound(SoundEvents.ARROW_SHOOT, 1.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
+        this.level.addFreshEntity(arrow);
     }
 
     public ItemStack getProjectile(ItemStack bowStack) {
@@ -435,10 +413,6 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
         return this.getMainHandItem().getItem() instanceof ProjectileWeaponItem && !this.getProjectile(this.getItemInHand(InteractionHand.MAIN_HAND)).isEmpty();
     }
 
-    private boolean hasTnt(){
-        return this.getMainHandItem().getItem() instanceof FlintAndSteelItem && this.getOffhandItem().is(Items.TNT);
-    }
-
     // AI
 
     @Override
@@ -465,14 +439,7 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
                         new StrafeTarget<MercenaryEntity>()
                                 .startCondition(MercenaryEntity::hasRanged),
                         new SetWalkTargetToAttackTarget<MercenaryEntity>()
-                                .startCondition(MercenaryEntity::hasMelee),
-                        new AvoidEntity<MercenaryEntity>()
-                                .avoiding((entity) -> Objects.equals(entity, this.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null)))
-                                .startCondition((self) -> self.hasTnt() && self.getBrain().checkMemory(MemoryModuleType.ATTACK_TARGET, MemoryStatus.VALUE_PRESENT)),
-                        new MyFollowEntity<MercenaryEntity, LivingEntity>()
-                                .startFollowingAt((s, t) -> 10D)
-                                .following((self) -> self.getBrain().getMemory(MemoryModuleType.ATTACK_TARGET).orElse(null))
-                                .startCondition((self) -> self.hasTnt() && self.getBrain().checkMemory(MemoryModuleType.ATTACK_TARGET, MemoryStatus.VALUE_PRESENT))
+                                .startCondition(MercenaryEntity::hasMelee)
                 )
         );
     }
@@ -515,10 +482,7 @@ public class MercenaryEntity extends PathfinderMob implements RangedAttackMob, S
                         new BowAttack<MercenaryEntity>(20)
                                 .startCondition(MercenaryEntity::hasRanged),
                         new AnimatableMeleeAttack<MercenaryEntity>(0)
-                                .startCondition(MercenaryEntity::hasMelee),
-                        new AnimatableRangedAttack<MercenaryEntity>(0)
-                                .attackRadius(10)
-                                .startCondition(MercenaryEntity::hasTnt)
+                                .startCondition(MercenaryEntity::hasMelee)
                 )
         );
     }
