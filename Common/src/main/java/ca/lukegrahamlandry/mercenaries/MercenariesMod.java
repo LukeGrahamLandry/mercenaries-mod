@@ -3,8 +3,8 @@ package ca.lukegrahamlandry.mercenaries;
 import ca.lukegrahamlandry.lib.config.ConfigWrapper;
 import ca.lukegrahamlandry.lib.data.DataWrapper;
 import ca.lukegrahamlandry.lib.data.impl.GlobalDataWrapper;
-import ca.lukegrahamlandry.mercenaries.wrapped.GlobalMercListData;
-import ca.lukegrahamlandry.mercenaries.wrapped.MercSyncedConfig;
+import ca.lukegrahamlandry.mercenaries.data.GlobalMercListData;
+import ca.lukegrahamlandry.mercenaries.data.MercSyncedConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

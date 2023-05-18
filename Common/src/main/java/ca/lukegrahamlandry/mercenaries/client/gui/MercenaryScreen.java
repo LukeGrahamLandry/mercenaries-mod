@@ -42,7 +42,7 @@ public class MercenaryScreen extends AbstractContainerScreen<MerceneryContainer>
         this.addRenderableWidget(new Button(i - 90, j +20+30, 80, 20, stanceText, (p_214318_1_) -> {
             this.attackStance = MercenaryEntity.AttackStance.values()[(this.attackStance.ordinal() + 1) % MercenaryEntity.AttackStance.values().length];
             this.merc.setAttackStance(this.attackStance);
-            new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()).sendToServer();
+            new SetMercStancePacket(this.merc.getId(), this.attackStance, this.moveStance).sendToServer();
             this.clearWidgets();
             this.init();
         }));
@@ -51,7 +51,7 @@ public class MercenaryScreen extends AbstractContainerScreen<MerceneryContainer>
         this.addRenderableWidget(new Button(i - 90, j +20+30+30, 80, 20, stanceText, (p_214318_1_) -> {
             this.moveStance = MercenaryEntity.MovementStance.values()[(this.moveStance.ordinal() + 1) % MercenaryEntity.MovementStance.values().length];
             this.merc.setMoveStance(this.moveStance);
-            new SetMercStancePacket(this.attackStance, this.moveStance, this.merc.getId()).sendToServer();
+            new SetMercStancePacket(this.merc.getId(), this.attackStance, this.moveStance).sendToServer();
             this.clearWidgets();
             this.init();
         }));

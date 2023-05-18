@@ -1,7 +1,7 @@
 package ca.lukegrahamlandry.mercenaries.network
 
 import ca.lukegrahamlandry.lib.network.ServerSideHandler
-import ca.lukegrahamlandry.mercenaries.HireMercenary
+import ca.lukegrahamlandry.mercenaries.events.HireMercenary
 import ca.lukegrahamlandry.mercenaries.MercenariesMod
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity.AttackStance

@@ -1,6 +1,9 @@
-package ca.lukegrahamlandry.mercenaries
+package ca.lukegrahamlandry.mercenaries.events
 
+import ca.lukegrahamlandry.mercenaries.MercRegistry
+import ca.lukegrahamlandry.mercenaries.MercenariesMod
 import ca.lukegrahamlandry.mercenaries.entity.MercenaryEntity
+import ca.lukegrahamlandry.mercenaries.expect
 import net.minecraft.core.Registry
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
@@ -10,12 +13,12 @@ import java.util.function.Predicate
 
 object HireMercenary {
     fun hireNew(player: ServerPlayer) {
-        val price = MercenariesMod.CONFIG.get().caclualteCurrentPrice(player)
+        val price = MercenariesMod.CONFIG.get().calculateCurrentPrice(player)
         if (payIfPossible(player, price, ::isPayment)) {
             val merc = MercRegistry.MERCENARY.get().create(player.level)
             merc!!.owner = player
             merc.setPos(player.x, player.y, player.z)
-            merc.data.server.village = player.blockPosition()
+            merc.serverData.village = player.blockPosition()
             MercenariesMod.MERC_LIST.get().addMerc(player, merc)
             player.level.addFreshEntity(merc)
 

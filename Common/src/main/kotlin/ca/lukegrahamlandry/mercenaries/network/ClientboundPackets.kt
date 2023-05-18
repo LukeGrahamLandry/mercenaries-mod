@@ -23,15 +23,7 @@ data class OpenMercRehireScreenPacket(val entityId: Int, val price: Int) : Clien
 
     companion object {
         fun create(player: ServerPlayer, merc: MercenaryEntity): OpenMercRehireScreenPacket {
-            val entityId = merc.id
-            val owned = MercenariesMod.MERC_LIST.get().getMercs(player).size
-            val price = if (owned >= MercenariesMod.CONFIG.get().maxMercs) {
-                Int.MAX_VALUE
-            } else {
-                MercenariesMod.CONFIG.get().rehirePrice
-            }
-
-            return OpenMercRehireScreenPacket(entityId, price)
+            return OpenMercRehireScreenPacket(merc.id, MercenariesMod.CONFIG.get().calculateRehirePrice(player))
         }
     }
 }
@@ -57,7 +49,7 @@ data class OpenLeaderScreenPacket(val entityId: Int, val price: Int) : ClientSid
     }
 
     companion object {
-        fun create(player: Player, leader: LeaderEntity) = OpenLeaderScreenPacket(leader.id, MercenariesMod.CONFIG.get().caclualteCurrentPrice(player))
+        fun create(player: Player, leader: LeaderEntity) = OpenLeaderScreenPacket(leader.id, MercenariesMod.CONFIG.get().calculateCurrentPrice(player))
     }
 }
 

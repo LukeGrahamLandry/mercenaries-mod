@@ -1,4 +1,4 @@
-package ca.lukegrahamlandry.mercenaries.wrapped;
+package ca.lukegrahamlandry.mercenaries.data;
 
 import ca.lukegrahamlandry.lib.config.Comment;
 import ca.lukegrahamlandry.mercenaries.MercenariesMod;
@@ -63,9 +63,18 @@ public class MercSyncedConfig {
         public int teleport = 24;
     }
 
-    public int caclualteCurrentPrice(Player player) {
+    public int calculateCurrentPrice(Player player) {
         int owned = MercenariesMod.MERC_LIST.get().getMercs(player).size();
         if (owned >= maxMercs) return Integer.MAX_VALUE;
         return (int) (basePrice * Math.pow(priceScaleAmount, owned));
+    }
+
+    public int calculateRehirePrice(Player player) {
+        int owned = MercenariesMod.MERC_LIST.get().getMercs(player).size();
+        if (owned >= MercenariesMod.CONFIG.get().maxMercs) {
+            return Integer.MAX_VALUE;
+        } else {
+            return MercenariesMod.CONFIG.get().rehirePrice;
+        }
     }
 }

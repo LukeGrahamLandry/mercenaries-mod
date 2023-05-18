@@ -10,7 +10,7 @@ import net.minecraft.nbt.CompoundTag
 import net.minecraft.world.entity.Entity
 import kotlin.reflect.KClass
 
-// TODO: same for unsynced server data
+// TODO: won't sync when it first gets loaded on a player's client
 interface SyncedData<T : Any> {
     var syncedData: T
     val defaultSyncedData: () -> T
@@ -19,18 +19,37 @@ interface SyncedData<T : Any> {
         get() = "WrapperLibSyncedData" + this.javaClass.name
 
     fun loadSyncedData(tag: CompoundTag) {
-        tag.putString(this.syncedDataKey, JsonHelper.get().toJson(this.syncedData))
-    }
-
-    fun saveSyncedData(tag: CompoundTag) {
         val default = this.defaultSyncedData()
         this.syncedData = if (tag.contains(this.syncedDataKey)) JsonHelper.get()
             .fromJson(tag.getString(this.syncedDataKey), default::class.java) else default
     }
 
+    fun saveSyncedData(tag: CompoundTag) {
+        tag.putString(this.syncedDataKey, JsonHelper.get().toJson(this.syncedData))
+    }
+
     fun setDirty() {
         SyncedDataUpdateMsg(self.id, GenericHolder(this.syncedData)).sendToTrackingClients(self)
     }
+}
+
+interface ServerData<T : Any> {
+    var serverData: T
+    val defaultServerData: () -> T
+
+    val serverDataKey: String
+        get() = "WrapperLibServerData" + this.javaClass.name
+
+    fun loadServerData(tag: CompoundTag) {
+        val default = this.defaultServerData()
+        this.serverData = if (tag.contains(this.serverDataKey)) JsonHelper.get()
+            .fromJson(tag.getString(this.serverDataKey), default::class.java) else default
+    }
+
+    fun saveServerData(tag: CompoundTag) {
+        tag.putString(this.serverDataKey, JsonHelper.get().toJson(this.serverData))
+    }
+
 }
 
 private val <T : Any> SyncedData<T>.self
